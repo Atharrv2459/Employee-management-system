@@ -51,7 +51,7 @@ export const getOwnManager = async (req, res) => {
   try {
     const result = await pool.query(`select * from managers where user_id = $1`, [user_id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ msg: "Manager profile not found" });
+      return res.status(404).json({ message: "Manager profile not found" });
     }
     res.status(200).json({ data: result.rows[0] });
   } catch (err) {
@@ -96,7 +96,7 @@ export const deleteManager = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Manager profile not found" });
     }
-    res.status(200).json({ msg: "Manager profile deleted", data: result.rows[0] });
+    res.status(200).json({ message: "Manager profile deleted", data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
