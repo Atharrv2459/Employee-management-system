@@ -109,3 +109,30 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// CHANGE PASSWORD
+export const changePassword = async (req, res) => {
+  const user_id = req.user.user_id;
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    const result = await pool.query(`SELECT password FROM users WHERE user_id = $1`, [user_id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const valid = await bcrypt.compare(oldPassword, result.rows[0].password);
+    if (!valid) {
+      return res.status(401).json({ message: "Old password is incorrect" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(newPassword, salt);
+
+    await pool.query(`UPDATE users SET password = $1, updated_at = NOW() WHERE user_id = $2`, [hash, user_id]);
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
