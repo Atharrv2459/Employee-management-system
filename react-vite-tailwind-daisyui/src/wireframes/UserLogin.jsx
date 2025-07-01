@@ -13,9 +13,10 @@ export default function UserLogin() {
         e.preventDefault();
         try{
           const res = await axios.post('http://localhost:5001/api/users/login',{identifier,password});
-          const {jwtToken}= res.data;
-          localStorage.setItem('token', jwtToken);
-          navigate('/punch');
+          const {token}= res.data;
+          localStorage.setItem('token', token);
+          
+          navigate('/employee/punch');
           toast.success('Login successfull')
 
 

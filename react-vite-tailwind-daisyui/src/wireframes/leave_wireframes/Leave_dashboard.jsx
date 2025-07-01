@@ -61,6 +61,18 @@ export default function Leave_dashboard(){
 
       </tr>
     </thead>
+    <tbody>
+            {attendanceList.map((entry, index) => (
+              <tr key={index}>
+                <td>{new Date(entry.punch_in).toLocaleDateString()}</td>
+                <td>{new Date(entry.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                <td>{entry.punch_out ? new Date(entry.punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                <td>30m</td>
+                <td>{entry.attendance_duration ? Math.floor(entry.attendance_duration.hours) + 'h ' + Math.floor(entry.attendance_duration.minutes) + 'm' : '-'}</td>
+                <td className="text-green-600 font-semibold">Present</td>
+              </tr>
+            ))}
+          </tbody>
      
   </table>
   </div>
