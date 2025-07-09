@@ -1,150 +1,201 @@
-// Punch_in.jsx
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
 
-export default function Punch_in() {
-  const [time, setTime] = useState("");
-  const [punchInTime, setPunchInTime] = useState(null);
-  const [punchOutTime, setPunchOutTime] = useState(null);
-  const [attendanceList, setAttendanceList] = useState([]);
+export default function LeaveApplication() {
+  const [leaveType, setLeaveType] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [reason, setReason] = useState("");
+  const [handover, setHandover] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
+  const [supportingDocs, setSupportingDocs] = useState(null);
+  const [managerId, setManagerId] = useState("");
+
+  const [managers, setManagers] = useState([]);
+  const [daysRequested, setDaysRequested] = useState(0);
 
   useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      const formatted = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      setTime(formatted);
+    const fetchManagers = async () => {
+      try {
+        const res = await axios.get("http://localhost:5001/api/manager/getAll");
+        setManagers(res.data.data || []);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load managers.");
+      }
     };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
+    fetchManagers();
   }, []);
 
   useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/attendance/get", {
-          headers: { Authorization: token },
-        });
-        setAttendanceList(res.data.data);
-      } catch (err) {
-        toast.error("Failed to fetch attendance");
-      }
-    };
-    fetchAttendance();
-  }, [punchInTime, punchOutTime]);
-
-  const handlePunchIn = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5001/api/attendance/punch-in", {}, {
-        headers: { Authorization: token },
-      });
-      setPunchInTime(new Date(res.data.data.punch_in));
-      toast.success("Punched in successfully");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Punch in failed");
+    if (startDate && endDate) {
+      const diffTime = new Date(endDate) - new Date(startDate);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      setDaysRequested(diffDays > 0 ? diffDays : 0);
+    } else {
+      setDaysRequested(0);
     }
+  }, [startDate, endDate]);
+
+  const handleFileChange = (e) => {
+    setSupportingDocs(e.target.files[0]);
   };
 
-  const handlePunchOut = async () => {
+  const handleSubmit = async () => {
+    if (!leaveType || !startDate || !endDate || !reason || !managerId) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("You must be logged in.");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5001/api/attendance/punch-out", {}, {
+      const payload = {
+        leave_type: leaveType,
+        start_date: startDate,
+        end_date: endDate,
+        reason: reason,
+        work_handover: handover,
+        emergency_contact: emergencyContact,
+        manager_id: managerId,
+      };
+
+      const res = await axios.post("http://localhost:5001/api/leaves/apply", payload, {
         headers: { Authorization: token },
       });
-      setPunchOutTime(new Date(res.data.data.punch_out));
-      toast.success("Punched out successfully");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Punch out failed");
+
+      toast.success(res.data.message || "Leave applied successfully.");
+
+      setLeaveType("");
+      setStartDate("");
+      setEndDate("");
+      setReason("");
+      setHandover("");
+      setEmergencyContact("");
+      setSupportingDocs(null);
+      setManagerId("");
+      setDaysRequested(0);
+
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.error || "Something went wrong.");
     }
   };
 
   return (
-    <div className="flex flex-col p-6 space-y-8">
-      <div className="bg-green-600 rounded-xl text-white flex flex-col lg:flex-row justify-between items-center p-6 font-bold">
-        <p>Currently Clocked in since {punchInTime ? new Date(punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}</p>
-        <p>Working time: Location: Main office</p>
-        <p>{time}</p>
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md my-10">
+      <h2 className="text-lg font-semibold mb-4">Apply for Leave</h2>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-medium">Leave Type *</label>
+        <select
+          value={leaveType}
+          onChange={(e) => setLeaveType(e.target.value)}
+          className="w-full rounded border px-3 py-2 outline-none "
+        >
+          <option value="">Select leave type</option>
+          <option value="sick">Sick Leave</option>
+          <option value="personal">Personal Leave</option>
+          <option value="maternity">Maternity Leave</option>
+          
+          <option value="annual">Annual Leave</option>
+        </select>
       </div>
 
-      <div className="join my-12 flex gap-4 justify-center">
-        <button className="btn join-item bg-green-50">View Full Timesheet</button>
-        <button className="btn join-item">Apply for Leave</button>
-        <button className="btn join-item">View Schedule</button>
-        <button className="btn join-item">Contact Manager</button>
-      </div>
-
-      <div className="flex flex-col lg:flex-row justify-center items-start gap-6">
-        <div className="card bg-gray-100 rounded-box w-full lg:w-1/2 h-auto place-items-center flex flex-col mx-10 border border-gray-400">
-          <p className="text-gray-400 my-10 text-xl font-semibold">
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-          <div className="text-5xl font-semibold p-6 rounded-xl">{time}</div>
-          <br />
-          <button onClick={handlePunchIn} className="mask mask-circle size-44 bg-gradient-to-br from-red-500 to-red-700 font-bold text-4xl text-white btn flex">
-            Punch in
-          </button>
-          <button onClick={handlePunchOut} className="btn bg-blue-600 text-white my-6 w-48">Punch out</button>
-          <button className="btn bg-yellow-500 text-white mb-6 w-48">Start break</button>
-          <button className="btn btn-outline btn-info w-48">Manual entry</button>
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block mb-1 font-medium">Start Date *</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full rounded border px-3 py-2"
+          />
         </div>
-
-        <div className="flex flex-col items-center gap-4 w-full lg:w-1/2">
-          <div className="divider lg:divider-horizontal hidden lg:block" />
-          <div className="card bg-base-200 rounded-box h-auto w-full flex flex-col place-items-center ">
-            <p className='my-8 font-semibold text-xl self-start ml-6'>📊 Today's work summary</p>
-            <div className='grid grid-cols-2 gap-y-4 gap-x-40 mb-20'>
-              <p className='text-gray-500 font-semibold'>Punch in time</p>
-              <p className='text-xl font-bold'>{punchInTime ? new Date(punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}</p>
-              <p className='text-gray-500 font-semibold'>Punch out time</p>
-              <p className='text-xl font-bold'>{punchOutTime ? new Date(punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}</p>
-              <p className='text-gray-500 font-semibold'>Break Time</p>
-              <p className='text-xl font-bold'>30m</p>
-              <p className='text-gray-500 font-semibold'>Expected Punch out</p>
-              <p className='text-xl font-bold'>5:00 PM</p>
-              <p className='text-gray-500 font-semibold'>Remaining Hours</p>
-              <p className='text-xl font-bold'>4h 13m</p>
-            </div>
-          </div>
-          <div className="divider" />
-          <div className="card bg-base-200 rounded-box h-20 w-full grid place-items-center">
-            Content
-          </div>
+        <div>
+          <label className="block mb-1 font-medium">End Date *</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full rounded border px-3 py-2"
+          />
         </div>
       </div>
 
-      <div className='text-gray-500 font-semibold text-xl mx-7 mt-10'>
-        Recent time entries
+      <div className="mb-4">
+        <label className="block mb-1 font-medium">Reason for Leave *</label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={3}
+          className="w-full rounded border outline-none px-3 py-2"
+          placeholder="Provide a brief explanation..."
+        ></textarea>
       </div>
 
-      <div className="card bg-white rounded-box w-full mt-4 shadow-md overflow-x-auto">
-        <table className="table text-sm mb-14 w-full">
-          <thead className="bg-base-200 text-gray-700">
-            <tr>
-              <th className='px-10'>Date</th>
-              <th>Punch In</th>
-              <th>Punch Out</th>
-              <th>Break Time</th>
-              <th>Total Hours</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attendanceList.map((entry, index) => (
-              <tr key={index}>
-                <td>{new Date(entry.punch_in).toLocaleDateString()}</td>
-                <td>{new Date(entry.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                <td>{entry.punch_out ? new Date(entry.punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                <td>30m</td>
-                <td>{entry.attendance_duration ? Math.floor(entry.attendance_duration.hours) + 'h ' + Math.floor(entry.attendance_duration.minutes) + 'm' : '-'}</td>
-                <td className="text-green-600 font-semibold">Present</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mb-4">
+        <label className="block mb-1 font-medium">Work Handover Instructions</label>
+        <textarea
+          value={handover}
+          onChange={(e) => setHandover(e.target.value)}
+          rows={3}
+          className="w-full rounded border outline-none px-3 py-2"
+          placeholder="Describe how your work will be handled..."
+        ></textarea>
       </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-medium">Emergency Contact</label>
+        <input
+          type="text"
+          value={emergencyContact}
+          onChange={(e) => setEmergencyContact(e.target.value)}
+          placeholder="Name and phone number"
+          className="w-full rounded border px-3 py-2 outline-none "
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-medium">Select Manager *</label>
+        <select
+          value={managerId}
+          onChange={(e) => setManagerId(e.target.value)}
+          className="w-full rounded border px-3 py-2 outline-none"
+        >
+          <option value="">Select manager</option>
+          {managers.map((manager) => (
+            <option key={manager.manager_id} value={manager.manager_id}>
+              {manager.first_name} {manager.last_name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-4 border-2 border-dashed border-gray-300 rounded p-4 text-center">
+        <label className="block mb-2 font-medium">Supporting Documents</label>
+        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={handleFileChange} />
+        <p className="text-sm text-gray-500 mt-2">Supported formats: PDF, JPG, PNG, DOC</p>
+      </div>
+
+      <div className="bg-blue-50 p-4 rounded mt-6">
+        <h3 className="font-semibold mb-2">📊 Leave Summary</h3>
+        <p>Total Days Requested: {daysRequested}</p>
+        <p>Remaining Balance: --</p>
+        <p>Return Date: --</p>
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        className="mt-6 w-full bg-blue-600 text-white font-semibold rounded py-2 hover:bg-blue-700"
+      >
+        Apply for Leave
+      </button>
     </div>
   );
 }

@@ -101,3 +101,20 @@ export const deleteManager = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+export const getEmployeesUnderManager = async (req, res) => {
+  const user_id = req.user.user_id;
+  try {
+    const managerResult = await pool.query(`SELECT manager_id FROM managers WHERE user_id = $1`, [user_id]);
+    if (managerResult.rows.length === 0) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    const manager_id = managerResult.rows[0].manager_id;
+    const employeesResult = await pool.query(`SELECT * FROM employees WHERE manager_id = $1`, [manager_id]);
+    res.status(200).json({ data: employeesResult.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

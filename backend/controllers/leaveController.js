@@ -1,17 +1,17 @@
 import pool from "../db.js";
 export const applyLeave = async (req, res) => {
   const user_id = req.user.user_id;
-  const { leave_type, start_date, end_date, reason } = req.body;
+  const { leave_type, start_date, end_date, reason, work_handover , emergency_contact } = req.body;
 
   try {
-    const employee = await pool.query(`select employee_id from employees where user_id = $1`, [user_id]);
+    const employee = await pool.query(`select employee_id , manager_id from employees where user_id = $1`, [user_id]);
     if (employee.rows.length === 0) { res.status(404).json({ message: "Employee not found" });
   }
-    const employee_id = employee.rows[0].employee_id;
+    const { employee_id, manager_id } = employee.rows[0];
 
-    const result = await pool.query(`insert into leaves (employee_id, leave_type, start_date, end_date, reason)
-      values ($1, $2, $3, $4, $5) returning *`,
-      [employee_id, leave_type, start_date, end_date, reason]
+    const result = await pool.query(`insert into leaves (employee_id, manager_id ,  leave_type, start_date, end_date, reason , work_handover , emergency_contact )
+      values ($1, $2, $3, $4, $5 , $6 , $7 ,$8 ) returning *`,
+      [employee_id, manager_id , leave_type, start_date, end_date, reason, work_handover , emergency_contact]
     );
 
     res.status(201).json({ message: "Leave applied", data: result.rows[0] });
@@ -66,7 +66,7 @@ export const cancelLeave = async (req, res) => {
 export const updateLeaveRequest = async (req, res) => {
   const user_id = req.user.user_id;
   const { id } = req.params;
-  const { leave_type, start_date, end_date, reason } = req.body;
+  const { leave_type, start_date, end_date, reason, work_handover , emergency_contact} = req.body;
 
   try {
     // Get employee_id from user_id
@@ -91,9 +91,11 @@ export const updateLeaveRequest = async (req, res) => {
         start_date = $2,
         end_date = $3,
         reason = $4,
+        work_handover = $5 ,
+        emergency_contact = $6,
         created_at = CURRENT_TIMESTAMP
-      WHERE id = $5 RETURNING *;
-    `, [leave_type, start_date, end_date, reason, id]);
+      WHERE id = $7 RETURNING *;
+    `, [leave_type, start_date, end_date, reason, work_handover , emergency_contact , id]);
 
     res.status(200).json({ message: "Leave request updated", data: result.rows[0] });
 
@@ -101,4 +103,6 @@ export const updateLeaveRequest = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 

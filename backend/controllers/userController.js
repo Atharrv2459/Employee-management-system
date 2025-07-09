@@ -2,7 +2,6 @@ import pool from '../db.js';
 import bcrypt from 'bcrypt';
 import generateToken from '../config/jwtGenerator.js';
 
-// REGISTER USER
 export const createUser = async (req, res) => {
   const { email, roll_no, password, role_id } = req.body;
   try {
@@ -30,9 +29,8 @@ export const createUser = async (req, res) => {
   }
 };
 
-// LOGIN USER
 export const loginUser = async (req, res) => {
-  const { identifier, password } = req.body; // identifier = email or roll_no
+  const { identifier, password } = req.body; 
   try {
     const user = await pool.query(
       `SELECT * FROM users WHERE email = $1 OR roll_no = $1`,
@@ -52,14 +50,13 @@ export const loginUser = async (req, res) => {
       user_id: user.rows[0].user_id,
       role_id: user.rows[0].role_id
     });
-
-    res.json({ token });
+    const roleID = user.rows[0].role_id
+    res.json({ token, role : roleID === 1 ? 'employee' : roleID === 2 ? 'manager' : 'unknown' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// GET ALL USERS
 export const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM users`);
@@ -69,7 +66,6 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// GET USER BY ID
 export const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -98,7 +94,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// DELETE USER
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
   try {
@@ -110,7 +105,6 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// CHANGE PASSWORD
 export const changePassword = async (req, res) => {
   const user_id = req.user.user_id;
   const { oldPassword, newPassword } = req.body;

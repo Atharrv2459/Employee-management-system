@@ -1,192 +1,197 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { useEffect } from 'react';
-import toast from 'react-hot-toast';
-export default function Punch_in_Manager() {
-  const [time,setTime] = useState('');
-  const [punch_in,setPunch_in] = useState('');
-  const [punch_out, setPunch_out]= useState('');
-  const [attendance_list,setAttendance_list]= useState([]);
-  const expectedPunchOut = punch_in
-  ? new Date(new Date(punch_in).getTime() + 8 * 60 * 60 * 1000)
-  : null;
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
+export default function ProfileSetup() {
+  const [first_name, setFirst_name] = useState("");
+  const [last_name, setLast_name] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [dob, setDob] = useState("");
+  const [job_title, setJob_title] = useState("");
+  const [profile_picture, setProfile_picture] = useState("");
+  const [joining_date, setJoining_date] = useState("");
+  const [isExistingProfile, setIsExistingProfile] = useState(false);
+  const [managers, setManagers] = useState([]);
+  const navigate = useNavigate();
 
-  useEffect(()=>{
-    const updateClock = ()=>{
-      const now = new Date();
-      const formatted = now.toLocaleTimeString([],{hour: '2-digit',minute: '2-digit'});
-      setTime(formatted);
-    
-    }
-    updateClock();
-    const interval = setInterval(updateClock, 1000); 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5001/api/manager/get", {
+          headers: { Authorization: token },
+        });
 
-    return () => clearInterval(interval);
-  },[]);
+        const data = res.data.data;
+        setIsExistingProfile(true);
+        setFirst_name(data.first_name || "");
+        setLast_name(data.last_name || "");
+        setPhone(data.phone || "");
+        setAddress(data.address || "");
+        setCity(data.city || "");
+        setDob(data.dob?.substring(0, 10) || "");
+        setJob_title(data.job_title || "");
+        setProfile_picture(data.profile_picture || "");
+        setJoining_date(data.joining_date?.substring(0, 10) || "");
+      } catch (error) {
+        if (error.response?.status === 404) {
+          setIsExistingProfile(false);
+          alert("No manager profile found. You can create one.");
+        } else {
+          console.error("Error fetching profile:", error);
+          toast.error("Failed to load profile");
+        }
+      }
+    };
 
-useEffect(()=>{
-  const fetchAttendance =async()=>{
-    try{
-      const token = localStorage.getItem('token');
-      const res = await axios.get("http://localhost:5001/api/attendance/get", {
+    fetchProfile();
+  }, []);
+
+  const profilePayload = {
+    first_name,
+    last_name,
+    phone,
+    address,
+    city,
+    dob: dob ? dob.substring(0, 10) : null,
+    job_title,
+    profile_picture,
+    joining_date: joining_date ? joining_date.substring(0, 10) : null,
+  };
+
+  const handleCreate = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post("http://localhost:5001/api/manager/create", profilePayload, {
         headers: { Authorization: token },
       });
-      setAttendance_list(res.data.data);
 
-    }
-    catch(error){
-      toast.error('Failed to fetch your attendance')
-
+      setIsExistingProfile(true);
+      toast.success("Profile created successfully");
+    } catch (error) {
+      console.error("Creation failed:", error);
+      toast.error(error.response?.data?.message || "Failed to create profile");
     }
   };
-  fetchAttendance();
-},[punch_in,punch_out]
-)
 
-const handlePunchIn= async()=>{
-  try{
-    const token = localStorage.getItem('token');
-    const res = await axios.post("http://localhost:5001/api/attendance/punch-in", {}, {
+  const handleUpdate = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.patch("http://localhost:5001/api/manager/update", profilePayload, {
         headers: { Authorization: token },
       });
-      setPunch_in(new Date(res.data.data.punch_in));
-      toast.success("Punched in successfully");
-  }
-  catch(error){
-     toast.error(error.response?.data?.message || "Punch in failed");
 
-  }
-}
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast.error("Failed to update profile", error);
+    }
+  };
 
-const handlePunchOut = async()=>{
-  try{
-    const token = localStorage.getItem('token');
-    const res = await axios.post("http://localhost:5001/api/attendance/punch-out", {}, {
-        headers: { Authorization: token },
-      });
-    setPunch_out(new Date(res.data.data.punch_out));
-      toast.success("Punched out successfully");
-  }
-  catch(error){
-    toast.error(error.response?.data?.message || "Punch out failed");
-  }
-  }
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const res = await axios.get("http://localhost:5001/api/manager/getAll");
+        setManagers(res.data.data);
+      } catch (error) {
+        console.error("Failed to fetch managers", error);
+        toast.error("Failed to load manager list");
+      }
+    };
+    fetchManagers();
+  }, []);
 
   return (
-    <div className="flex flex-col p-6 space-y-8">
-      <div className="bg-green-600 rounded-xl text-white flex flex-col lg:flex-row justify-between items-center p-6 font-bold">
-        <p>Currently Clocked in since 8:00 AM</p>
-        <p>Working time: Location: Main office</p>
-        <p>{time}</p>
-      </div>
-       <div className="join my-48 flex gap-4 justify-center">
-  <button className="btn join-item bg-green-50">View Full Timesheet</button>
-  <button className="btn join-item">Apply for Leave</button>
-  <button className="btn join-item">View Schedule</button>
-  <button className="btn join-item">Contact Manager</button>
-</div>
-      <div className="flex flex-col lg:flex-row justify-center items-start gap-6">
-        
-   
+    <div className="p-6">
+      <div className="flex w-full flex-col lg:flex-row gap-12">
+        <div className="card bg-base-100 shadow-md rounded-xl w-full mx-12">
+          <div className="bg-blue-600 text-white text-center py-3 rounded-t-xl font-semibold text-lg">
+            Manager Dashboard - Profile Management
+          </div>
+          <div className="p-6 space-y-4">
+            <h3 className="text-gray-700 font-bold mb-2">Profile {isExistingProfile ? "Details" : "Setup"}</h3>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">First Name</label>
+                <input className="input input-bordered w-full" placeholder="First Name" value={first_name} onChange={(e) => setFirst_name(e.target.value)} />
+              </div>
 
-        <div className="card bg-gray-100 rounded-box w-full lg:w-1/2 h-auto place-items-center flex flex-col mx-10 mr-10 border border-gray-400 border">
-        <p className="text-gray-400 my-10 text-xl font-semibold">
-            Thursday, December 22, 2024
-        </p>
-        <div className="text-5xl font-semibold p-6 rounded-xl w-xl">{time}</div>
-        <br></br>
-        <br></br>
-        
-        <button onClick={handlePunchIn} className="mask mask-circle size-44 bg-gradient-to-br from-red-500 to-red-700 font-bold text-4xl text-white btn flex">
-  Punch in
-</button>
- <button onClick={handlePunchOut} className="btn bg-blue-600 text-white my-6 w-48">Punch out</button>
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Last Name</label>
+                <input className="input input-bordered w-full" placeholder="Last Name" value={last_name} onChange={(e) => setLast_name(e.target.value)} />
+              </div>
 
-        <button className="btn bg-yellow-500 text-white my-12 w-48">Start break</button>   
-        <button className="btn btn-outline btn-info w-48">Manual entry</button>
-        <br></br>
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Phone</label>
+                <input className="input input-bordered w-full" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Address</label>
+                <input className="input input-bordered w-full" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">City</label>
+                <input className="input input-bordered w-full" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Date of Birth</label>
+                <input className="input input-bordered w-full" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Job Title</label>
+                <input className="input input-bordered w-full" placeholder="Job Title" value={job_title} onChange={(e) => setJob_title(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Profile Picture URL</label>
+                <input className="input input-bordered w-full" placeholder="Profile Picture URL" value={profile_picture} onChange={(e) => setProfile_picture(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-600">Joining Date</label>
+                <input className="input input-bordered w-full" type="date" value={joining_date} onChange={(e) => setJoining_date(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-4">
+              {isExistingProfile ? (
+                <button className="btn bg-blue-500 text-white" onClick={handleUpdate}>
+                  Update Profile
+                </button>
+              ) : (
+                <button className="btn bg-green-600 text-white" onClick={handleCreate}>
+                  Create Profile
+                </button>
+              )}
+              <button className="btn bg-gray-500 text-white" onClick={() => navigate("/manager/dashboard")}>
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
         </div>
 
-
-        
-
-
-
-
-        <div className="flex flex-col items-center gap-4 w-full lg:w-1/2">
-          <div className="divider lg:divider-horizontal hidden lg:block" />
-          <div className="card bg-base-200 rounded-box h-auto w-full flex flex-col place-items-center ">
-            <p className='my-8 font-semibold mr-72 text-xl'>📊Today's work summary</p>
-          <div className='grid grid-cols-2 gap-y-4 gap-x-40 mb-20'>
-            <p className='text-gray-500 font-semibold'>Punch in time</p>
-            <p className='text-xl font-bold'>{punch_in ? new Date(punch_in).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}): '-'}</p>
-
-            <p className='text-gray-500 font-semibold'>Hours worked</p>
-            <p className='text-xl font-bold'> 3h 47m</p>
-
-            <p className='text-gray-500 font-semibold'>Break Time</p>
-            <p className='text-xl font-bold'>30m</p>
-            
-
-            <p className='text-gray-500 font-semibold'>Expected Punch out</p>
-            <p className='text-xl font-bold'>{expectedPunchOut
-    ? expectedPunchOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : '-'}</p>
-
-            <p className='text-gray-500 font-semibold'>Punch out time</p>
-              <p className='text-xl font-bold'>{punch_out ? new Date(punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}</p>
-
-            <p className='text-gray-500 font-semibold'>Remaining Hours</p>
-            <p className='text-xl font-bold'>4h 13m</p>
+        <div className="card bg-base-100 shadow-md rounded-xl w-full mr-12">
+          <div className="bg-blue-600 text-white text-center py-3 rounded-t-xl font-semibold text-lg">
+            Emergency Contacts
           </div>
-          </div>
-          <div className="divider" />
-          <div className="card bg-base-200 rounded-box h-20 w-full grid place-items-center">
-            Content
-          </div>
+          <div className="p-6 text-sm text-gray-500">No functionality implemented yet.</div>
         </div>
       </div>
-      <br></br>
-<br></br>
-      <div className='text-gray-500 font-semibold text-xl mx-7 '>
-        Recent time entries
 
+      <div className="card bg-base-100 shadow-md rounded-xl max-w-6xl mx-auto mt-16">
+        <div className="bg-blue-600 text-white text-center py-3 rounded-t-xl font-semibold text-lg">
+          Shift Preferences
+        </div>
+        <div className="p-6 text-sm text-gray-500">Shift preferences will be added later.</div>
       </div>
-      <div className="card bg-white rounded-box w-full mt-12 shadow-md overflow-x-auto">
-  <table className="table text-sm mb-14">
-    <thead className="bg-base-200 text-gray-700">
-      <tr>
-        <th className='px-10'>Date</th>
-        <th>Punch In</th>
-        <th>Punch Out</th>
-        <th>Break Time</th>
-        <th>Total Time</th>
-        <th>Status</th>
-
-      </tr>
-    </thead>
-    <tbody>
-
-      {attendance_list.map((entry, index) => (
-              <tr key={index}>
-                <td>{new Date(entry.punch_in).toLocaleDateString()}</td>
-                <td>{new Date(entry.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                <td>{entry.punch_out ? new Date(entry.punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                <td>30m</td>
-                <td>{entry.attendance_duration ? Math.floor(entry.attendance_duration.hours) + 'h ' + Math.floor(entry.attendance_duration.minutes) + 'm' : '-'}</td>
-                <td className="text-green-600 font-semibold">Present</td>
-              </tr>
-            ))}
-
-    </tbody>
-  </table>
-</div>
-<br></br>
-<br></br>
-<br></br>
-</div>
-
+    </div>
   );
 }

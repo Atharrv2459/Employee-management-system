@@ -94,3 +94,31 @@ export const getAllEmployees = async (req,res)=>{
         res.status(500).json({error : err.message})
     }
 }
+
+
+// ✅ Get Employees Assigned to Logged-in Manager
+export const getEmployeesByManager = async (req, res) => {
+  const user_id = req.user.user_id;
+
+  try {
+    // 1️⃣ Get the manager_id from the managers table based on the logged-in user's user_id
+    const managerResult = await pool.query(`SELECT manager_id FROM managers WHERE user_id = $1`, [user_id]);
+
+    if (managerResult.rows.length === 0) {
+      return res.status(404).json({ message: "Manager profile not found" });
+    }
+
+    const manager_id = managerResult.rows[0].manager_id;
+
+    // 2️⃣ Now fetch employees who report to this manager
+    const employeesResult = await pool.query(`SELECT e.*, u.email
+FROM employees e
+JOIN users u ON e.user_id = u.user_id
+WHERE e.manager_id = $1
+`, [manager_id]);
+
+    res.status(200).json({ data: employeesResult.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

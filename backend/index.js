@@ -8,6 +8,7 @@ import managerRouter from './routers/managerRoutes.js'
 import attendanceRouter from './routers/attendanceRoutes.js'
 import leaveRouter from './routers/leaveRoutes.js'
 import leaveManagerRouter from './routers/leaveManagerRoutes.js'
+import manualEntryRouter from './routers/manualEntryRoutes.js'
 
 import pool from "./db.js";
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/manager',managerRouter);
 app.use('/api/attendance',attendanceRouter);
 app.use('/api/leaves',leaveRouter)
 app.use('/api/leave-management',leaveManagerRouter);
+app.use('/api/manual_entry',manualEntryRouter);
 
 
 

@@ -1,4 +1,4 @@
-// controllers/rolesController.jsx
+
 import pool from "../db.js";
 
 export const createRole = async (req, res) => {
@@ -48,6 +48,8 @@ export const updateRole = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 export const deleteRole = async (req, res) => {
   const { id } = req.params;
