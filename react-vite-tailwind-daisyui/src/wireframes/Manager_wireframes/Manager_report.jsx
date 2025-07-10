@@ -222,13 +222,13 @@ export default function Manager_report() {
               <span className="font-bold">3.0 days</span>
             </div>
             <div className="flex flex-col gap-4">
-              <button onClick={() => navigate('/employee/leaves/apply')} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
+              <button onClick={() => navigate('/manager/leaves/apply')} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
                 Apply for Leave
               </button>
-              <button onClick={() => navigate('/employee/leaves/balance')} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
+              <button onClick={() => navigate('/manager/leaves/balance')} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
                 Leave Balance
               </button>
-              <button onClick={() => navigate('/employee/leaves/apply')} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
+              <button onClick={() => navigate('/manager/leaves/leave-history')} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
                 Leave History
               </button>
             </div>

@@ -1,34 +1,66 @@
 import pool from "../db.js";
 import { deductLeaveBalance } from "./leaveBalanceController.js";
+
+
 export const getPendingLeavesForManager = async (req, res) => {
   const user_id = req.user.user_id;
+
   try {
-    const manager = await pool.query(
-      `select manager_id from managers where user_id = $1`,
+    // Step 1: Get manager_id
+    const managerResult = await pool.query(
+      `SELECT manager_id FROM managers WHERE user_id = $1`,
       [user_id]
     );
 
-    if (manager.rows.length === 0) {
+    if (managerResult.rows.length === 0) {
       return res.status(403).json({ msg: "You are not registered as a manager." });
     }
 
-    const manager_id = manager.rows[0].manager_id;
+    const manager_id = managerResult.rows[0].manager_id;
 
-    const result = await pool.query(
-      `SELECT l.*, e.first_name, e.last_name 
+    // Step 2: Get pending leaves along with employee info (if available)
+    const leavesResult = await pool.query(
+      `SELECT l.*, e.first_name AS emp_first, e.last_name AS emp_last
        FROM leaves l
-       JOIN employees e ON l.employee_id = e.employee_id
+       LEFT JOIN employees e ON l.user_id = e.user_id
        WHERE l.manager_id = $1 AND l.status = 'pending'
        ORDER BY l.created_at DESC`,
       [manager_id]
     );
-    console.log("Pending Leaves Found:", result.rows);
 
-    res.status(200).json({ data: result.rows });
+    const leavesWithNames = await Promise.all(
+      leavesResult.rows.map(async (leave) => {
+        let first_name = leave.emp_first;
+        let last_name = leave.emp_last;
+
+        // Step 3: If employee name not found, check managers table
+        if (!first_name) {
+          const mgrRes = await pool.query(
+            `SELECT first_name, last_name FROM managers WHERE user_id = $1`,
+            [leave.user_id]
+          );
+
+          if (mgrRes.rows.length > 0) {
+            first_name = mgrRes.rows[0].first_name;
+            last_name = mgrRes.rows[0].last_name;
+          }
+        }
+
+        return {
+          ...leave,
+          first_name: first_name || "Unknown",
+          last_name: last_name || "User"
+        };
+      })
+    );
+
+    res.status(200).json({ data: leavesWithNames });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 export const updateLeaveStatus = async (req, res) => {
@@ -57,7 +89,7 @@ export const updateLeaveStatus = async (req, res) => {
 
     if (status === 'approved') {
       const daysRequested = (new Date(leave.end_date) - new Date(leave.start_date)) / (1000 * 60 * 60 * 24) + 1;
-      await deductLeaveBalance(leave.employee_id, leave.leave_type, daysRequested);
+      await deductLeaveBalance(leave.user_id, leave.leave_type, daysRequested);  // 👈 using user_id now
     }
 
     res.status(200).json({ message: `Leave ${status}`, data: leave });

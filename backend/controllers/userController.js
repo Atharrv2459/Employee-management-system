@@ -1,6 +1,7 @@
 import pool from '../db.js';
 import bcrypt from 'bcrypt';
 import generateToken from '../config/jwtGenerator.js';
+import { createDefaultLeaveBalance } from './leaveBalanceController.js';
 
 export const createUser = async (req, res) => {
   const { email, roll_no, password, role_id } = req.body;
@@ -23,6 +24,7 @@ export const createUser = async (req, res) => {
 
     const user = result.rows[0];
     const token = generateToken({ user_id: user.user_id, role_id: user.role_id });
+    await createDefaultLeaveBalance(user.user_id);
     res.status(201).json({ token });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -53,6 +53,9 @@ export default function App() {
           <Route path="/manager/punch" element={<Punch_in_Manager />} />
           <Route path="/manager/profile" element={<ManagerProfileSetup />} />
           <Route path="/manager/report" element={<ManagerReport />} />
+          <Route path="/manager/leaves/apply" element={<LeaveApplication />} />
+          <Route path="/manager/leaves/balance" element={<LeaveBalanceDashboard />} />
+          <Route path="/manager/leaves/leave-history" element={<LeaveHistory />} />
         </Route>
 
       </Routes>

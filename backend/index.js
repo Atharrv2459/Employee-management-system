@@ -9,6 +9,8 @@ import attendanceRouter from './routers/attendanceRoutes.js'
 import leaveRouter from './routers/leaveRoutes.js'
 import leaveManagerRouter from './routers/leaveManagerRoutes.js'
 import manualEntryRouter from './routers/manualEntryRoutes.js'
+import emergencyContactRouter from './routers/emergencyContactRoutes.js'
+import shiftRouter from './routers/shiftRoutes.js'
 
 import pool from "./db.js";
 const app = express();
@@ -30,6 +32,8 @@ app.use('/api/attendance',attendanceRouter);
 app.use('/api/leaves',leaveRouter)
 app.use('/api/leave-management',leaveManagerRouter);
 app.use('/api/manual_entry',manualEntryRouter);
+app.use('/api/emergency', emergencyContactRouter);
+app.use('/api/shift', shiftRouter);
 
 
 
