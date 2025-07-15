@@ -11,7 +11,7 @@ export default function EmployeeLayout() {
 
   return (
     <div>
-      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full">
+      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50">
         <div className="navbar-start">
           <button className="btn btn-ghost text-xl font-bold text-blue-600">Employee Panel</button>
         </div>
@@ -23,6 +23,7 @@ export default function EmployeeLayout() {
             <li><a className="font-semibold" onClick={() => navigate('/employee/profile')}>Profile</a></li>
             <li><a className="font-semibold" onClick={() => navigate('/employee/punch')}>Punch In/Out</a></li>
              <li><a className="font-semibold" onClick={() => navigate('/employee/manual-entry')}>Manual entry</a></li>
+              <li><a className="font-semibold" onClick={() => navigate('/employee/timesheet')}>Timesheet</a></li>
           </ul>
         </div>
 

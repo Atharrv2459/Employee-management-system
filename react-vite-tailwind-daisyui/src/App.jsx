@@ -24,6 +24,10 @@ import ManagerProfileSetup from "./wireframes/Manager_wireframes/ManagerProfileS
 import Punch_in_Manager from "./wireframes/Manager_wireframes/Punch_in_Manager";
 import ManagerDashboard from "./wireframes/Manager_wireframes/Dashboard_manager";
 import ManagerReport from "./wireframes/Manager_wireframes/Manager_report";
+import ManagerTimesheet from "./wireframes/Manager_wireframes/Timesheet_manager";
+import EmployeeTimesheet from "./wireframes/Employee_wireframes/Timesheet_employee";
+import AdminDashboard from "./adminDashboard";
+
 
 export default function App() {
   return (
@@ -44,6 +48,7 @@ export default function App() {
           <Route path="/employee/leaves/apply" element={<LeaveApplication />} />
           <Route path="/employee/leaves/balance" element={<LeaveBalanceDashboard />} />
           <Route path="/employee/leave-history" element={<LeaveHistory />} />
+          <Route path="/employee/timesheet" element={<EmployeeTimesheet />} />
          
         </Route>
 
@@ -56,6 +61,10 @@ export default function App() {
           <Route path="/manager/leaves/apply" element={<LeaveApplication />} />
           <Route path="/manager/leaves/balance" element={<LeaveBalanceDashboard />} />
           <Route path="/manager/leaves/leave-history" element={<LeaveHistory />} />
+          <Route path="/manager/timesheet" element={<ManagerTimesheet />} />
+        </Route>
+        <Route path="/admin" element={<AdminDashboard />}>
+
         </Route>
 
       </Routes>

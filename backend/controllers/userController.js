@@ -32,33 +32,44 @@ export const createUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-  const { identifier, password } = req.body; 
+  const { identifier, password } = req.body;
+
   try {
-    const user = await pool.query(
+    const userResult = await pool.query(
       `SELECT * FROM users WHERE email = $1 OR roll_no = $1`,
       [identifier]
     );
 
-    if (user.rows.length === 0) {
+    if (userResult.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const valid = await bcrypt.compare(password, user.rows[0].password);
-    if (!valid) {
+    const user = userResult.rows[0];
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const token = generateToken({
-      user_id: user.rows[0].user_id,
-      role_id: user.rows[0].role_id
+      user_id: user.user_id,
+      role_id: user.role_id,
     });
-    const roleID = user.rows[0].role_id
-    res.json({ token, role : roleID === 1 ? 'employee' : roleID === 2 ? 'manager' : 'unknown' });
+
+    // Role mapping
+    const roleMap = {
+      1: 'employee',
+      2: 'manager',
+      4: 'admin',
+    };
+    const role = roleMap[user.role_id] || 'unknown';
+
+    res.json({ token, role });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Login error:", err.message);
+    res.status(500).json({ error: 'Server error. Please try again later.' });
   }
 };
-
 export const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM users`);

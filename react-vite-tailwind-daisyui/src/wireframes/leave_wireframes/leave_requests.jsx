@@ -129,7 +129,7 @@ const openEditModal = (leave) => {
               {filteredLeaves.map((leave) => (
                 <tr key={leave.id}>
                 
-                  <td>{formatDate(leave.leave_type)}</td>
+                  <td>{leave.leave_type}</td>
                   <td>{formatDate(leave.start_date)}</td>
                   <td>{formatDate(leave.end_date)}</td>
                   <td>{leave.start_date && leave.end_date ? Math.floor((new Date(leave.end_date) - new Date(leave.start_date)) / (1000 * 60 * 60 * 24)) + 1

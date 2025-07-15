@@ -7,12 +7,17 @@ export default function UserRegister() {
   const [email, setEmail] = useState("");
   const [roll_no, setRollNo] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("employee"); // default
+  const [role, setRole] = useState("employee"); // default role
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    const role_id = role === "employee" ? 1 : 2;
+
+    const role_id =
+      role === "employee" ? 1 :
+      role === "manager" ? 2 :
+      role === "admin" ? 4 :
+      1;
 
     try {
       const res = await axios.post("http://localhost:5001/api/users/register", {
@@ -25,15 +30,19 @@ export default function UserRegister() {
       const { token } = res.data;
       localStorage.setItem("token", token);
       toast.success("Registration successful");
+
       if (role === "employee") {
         navigate("/employee/profile");
       } else if (role === "manager") {
         navigate("/manager/profile");
+      } else if (role === "admin") {
+        navigate("/admin"); // Update this route as needed
       }
+
     } catch (err) {
       toast.error(
         "Registration failed: " +
-          (err.response?.data?.message || err.message)
+        (err.response?.data?.message || err.message)
       );
     }
   };
@@ -91,6 +100,7 @@ export default function UserRegister() {
           >
             <option value="employee">Employee</option>
             <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
           </select>
         </div>
 

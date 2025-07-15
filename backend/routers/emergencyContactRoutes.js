@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post("/create", verifyToken, createEmergencyContact);
 router.get("/get", verifyToken, getEmergencyContact);
-router.put("/:id", verifyToken, updateEmergencyContact);
-router.delete("/:id", verifyToken, deleteEmergencyContact);
+router.patch("/update", verifyToken, updateEmergencyContact);
+router.delete("/delete", verifyToken, deleteEmergencyContact);
 
 export default router;

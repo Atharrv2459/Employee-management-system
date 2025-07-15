@@ -88,7 +88,7 @@ export default function LeaveApplication() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md my-10">
+    <div className="max-w-3xl mx-auto p-6 bg-gray-200 rounded-xl shadow-md my-10">
       <h2 className="text-lg font-semibold mb-4">Apply for Leave</h2>
 
       <div className="mb-4">

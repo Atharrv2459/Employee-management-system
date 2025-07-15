@@ -44,27 +44,39 @@ export const getEmergencyContact = async (req, res) => {
 
 // ✅ Update Emergency Contact
 export const updateEmergencyContact = async (req, res) => {
-  const { id } = req.params;
-  const { primary_contact_name, primary_contact_relationship, primary_contact_phone,
-          secondary_contact_name, secondary_contact_relationship, secondary_contact_phone,
-          medical_info } = req.body;
-
   const user_id = req.user.user_id;
+  const {
+    primary_contact_name,
+    primary_contact_relationship,
+    primary_contact_phone,
+    secondary_contact_name,
+    secondary_contact_relationship,
+    secondary_contact_phone,
+    medical_info
+  } = req.body;
 
   try {
     const result = await pool.query(
       `UPDATE emergency_contacts SET
-      primary_contact_name = $1,
-      primary_contact_relationship = $2,
-      primary_contact_phone = $3,
-      secondary_contact_name = $4,
-      secondary_contact_relationship = $5,
-      secondary_contact_phone = $6,
-      medical_info = $7
-      WHERE id = $8 AND user_id = $9 RETURNING *`,
-      [primary_contact_name, primary_contact_relationship, primary_contact_phone,
-       secondary_contact_name, secondary_contact_relationship, secondary_contact_phone,
-       medical_info, id, user_id]
+        primary_contact_name = $1,
+        primary_contact_relationship = $2,
+        primary_contact_phone = $3,
+        secondary_contact_name = $4,
+        secondary_contact_relationship = $5,
+        secondary_contact_phone = $6,
+        medical_info = $7
+       WHERE user_id = $8
+       RETURNING *`,
+      [
+        primary_contact_name,
+        primary_contact_relationship,
+        primary_contact_phone,
+        secondary_contact_name,
+        secondary_contact_relationship,
+        secondary_contact_phone,
+        medical_info,
+        user_id
+      ]
     );
 
     if (result.rows.length === 0) {
@@ -78,15 +90,14 @@ export const updateEmergencyContact = async (req, res) => {
   }
 };
 
-// ✅ Delete Emergency Contact
+
 export const deleteEmergencyContact = async (req, res) => {
-  const { id } = req.params;
   const user_id = req.user.user_id;
 
   try {
     const result = await pool.query(
-      `DELETE FROM emergency_contacts WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, user_id]
+      `DELETE FROM emergency_contacts WHERE user_id = $1 RETURNING *`,
+      [user_id]
     );
 
     if (result.rows.length === 0) {

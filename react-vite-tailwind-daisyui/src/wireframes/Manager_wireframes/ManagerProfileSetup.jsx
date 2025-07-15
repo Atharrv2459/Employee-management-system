@@ -3,7 +3,11 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-export default function ProfileSetup() {
+// Import shared components
+import EmergencyContactCard from "../Employee_wireframes/profile/EmergencyContactCard";
+import ShiftPreferenceCard from "../Employee_wireframes/profile/ShiftPreferenceCard";
+
+export default function ManagerProfileSetup() {
   const [first_name, setFirst_name] = useState("");
   const [last_name, setLast_name] = useState("");
   const [phone, setPhone] = useState("");
@@ -41,27 +45,23 @@ export default function ProfileSetup() {
       } catch (error) {
         if (error.response?.status === 404) {
           setIsExistingProfile(false);
-          alert("No manager profile found. You can create one.");
+          toast("No manager profile found. You can create one.");
         } else {
-          console.error("Error fetching profile:", error);
-          toast.error("Failed to load profile");
+          toast.error("Failed to load manager profile");
         }
       }
     };
 
-    fetchProfile();
-  }, []);
-
-  useEffect(() => {
     const fetchManagers = async () => {
       try {
         const res = await axios.get("http://localhost:5001/api/manager/getAll");
         setManagers(res.data.data);
       } catch (error) {
-        console.error("Failed to fetch managers", error);
-        toast.error("Failed to load manager list");
+        toast.error("Failed to load managers");
       }
     };
+
+    fetchProfile();
     fetchManagers();
   }, []);
 
@@ -84,12 +84,10 @@ export default function ProfileSetup() {
       await axios.post("http://localhost:5001/api/manager/create", profilePayload, {
         headers: { Authorization: token },
       });
-
       setIsExistingProfile(true);
-      toast.success("Profile created successfully");
+      toast.success("Manager profile created");
     } catch (error) {
-      console.error("Creation failed:", error);
-      toast.error(error.response?.data?.message || "Failed to create profile");
+      toast.error("Failed to create profile");
     }
   };
 
@@ -99,10 +97,8 @@ export default function ProfileSetup() {
       await axios.patch("http://localhost:5001/api/manager/update", profilePayload, {
         headers: { Authorization: token },
       });
-
-      toast.success("Profile updated successfully");
+      toast.success("Manager profile updated");
     } catch (error) {
-      console.error("Update failed:", error);
       toast.error("Failed to update profile");
     }
   };
@@ -110,94 +106,60 @@ export default function ProfileSetup() {
   return (
     <div className="p-6">
       <div className="flex w-full flex-col lg:flex-row gap-12">
+        {/* Profile Setup */}
         <div className="card bg-base-100 shadow-md rounded-xl w-full mx-12">
           <div className="bg-blue-600 text-white text-center py-3 rounded-t-xl font-semibold text-lg">
             Manager Dashboard - Profile Management
           </div>
 
           <div className="p-6 space-y-4">
-            <h3 className="text-gray-700 font-bold mb-2">Profile {isExistingProfile ? "Details" : "Setup"}</h3>
+            <h3 className="text-gray-700 font-bold mb-2">
+              Profile {isExistingProfile ? "Details" : "Setup"}
+            </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">First Name</label>
-                <input className="input input-bordered w-full" value={first_name} onChange={(e) => setFirst_name(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Last Name</label>
-                <input className="input input-bordered w-full" value={last_name} onChange={(e) => setLast_name(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Phone</label>
-                <input className="input input-bordered w-full" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Address</label>
-                <input className="input input-bordered w-full" value={address} onChange={(e) => setAddress(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">City</label>
-                <input className="input input-bordered w-full" value={city} onChange={(e) => setCity(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Date of Birth</label>
-                <input className="input input-bordered w-full" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Job Title</label>
-                <input className="input input-bordered w-full" value={job_title} onChange={(e) => setJob_title(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Profile Picture URL</label>
-                <input className="input input-bordered w-full" value={profile_picture} onChange={(e) => setProfile_picture(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Joining Date</label>
-                <input className="input input-bordered w-full" type="date" value={joining_date} onChange={(e) => setJoining_date(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600">Reporting Manager</label>
-                <select className="select select-bordered w-full" value={reporting_manager} onChange={(e) => setReporting_manager(e.target.value)}>
-                  <option value="">Select Reporting Manager</option>
-                  {managers.map((mgr) => (
-                    <option key={mgr.manager_id} value={mgr.manager_id}>
-                      {mgr.first_name} {mgr.last_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <input className="input input-bordered w-full" placeholder="First Name" value={first_name} onChange={(e) => setFirst_name(e.target.value)} />
+              <input className="input input-bordered w-full" placeholder="Last Name" value={last_name} onChange={(e) => setLast_name(e.target.value)} />
+              <input className="input input-bordered w-full" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="input input-bordered w-full" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <input className="input input-bordered w-full" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              <input className="input input-bordered w-full" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+              <input className="input input-bordered w-full" placeholder="Job Title" value={job_title} onChange={(e) => setJob_title(e.target.value)} />
+              <input className="input input-bordered w-full" placeholder="Profile Picture URL" value={profile_picture} onChange={(e) => setProfile_picture(e.target.value)} />
+              <input className="input input-bordered w-full" type="date" value={joining_date} onChange={(e) => setJoining_date(e.target.value)} />
+              <select className="select select-bordered w-full" value={reporting_manager} onChange={(e) => setReporting_manager(e.target.value)}>
+                <option value="">Select Reporting Manager</option>
+                {managers.map((mgr) => (
+                  <option key={mgr.manager_id} value={mgr.manager_id}>
+                    {mgr.first_name} {mgr.last_name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex justify-between mt-4">
               {isExistingProfile ? (
-                <button className="btn bg-blue-500 text-white" onClick={handleUpdate}>Update Profile</button>
+                <button className="btn bg-blue-500 text-white" onClick={handleUpdate}>
+                  Update Profile
+                </button>
               ) : (
-                <button className="btn bg-green-600 text-white" onClick={handleCreate}>Create Profile</button>
+                <button className="btn bg-green-600 text-white" onClick={handleCreate}>
+                  Create Profile
+                </button>
               )}
-              <button className="btn bg-gray-500 text-white" onClick={() => navigate("/manager/dashboard")}>Go to Dashboard</button>
+              <button className="btn bg-gray-500 text-white" onClick={() => navigate("/manager/dashboard")}>
+                Go to Dashboard
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="card bg-base-100 shadow-md rounded-xl w-full mr-12">
-          <div className="bg-blue-600 text-white text-center py-3 rounded-t-xl font-semibold text-lg">Emergency Contacts</div>
-          <div className="p-6 text-sm text-gray-500">No functionality implemented yet.</div>
-        </div>
+        {/* Emergency Contact Section */}
+        <EmergencyContactCard />
       </div>
 
-      <div className="card bg-base-100 shadow-md rounded-xl max-w-6xl mx-auto mt-16">
-        <div className="bg-blue-600 text-white text-center py-3 rounded-t-xl font-semibold text-lg">Shift Preferences</div>
-        <div className="p-6 text-sm text-gray-500">Shift preferences will be added later.</div>
-      </div>
+      {/* Shift Preferences Section */}
+      <ShiftPreferenceCard />
     </div>
   );
 }
