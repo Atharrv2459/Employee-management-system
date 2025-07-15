@@ -6,7 +6,6 @@ export default function EmployeeTimesheet() {
   const [summary, setSummary] = useState({ totalHours: '0h 0m', overtime: '0h 0m', attendance: '0%' });
   const token = localStorage.getItem('token');
 
-  // ✅ Helper function to format minutes into "0h 0m"
   const formatToHoursMinutes = (minutes) => {
     const h = Math.floor(minutes / 60);
     const m = Math.floor(minutes % 60);
