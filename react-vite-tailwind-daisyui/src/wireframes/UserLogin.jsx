@@ -32,7 +32,7 @@ console.log("Logged in role:", role);
       } else if (role === "manager") {
         navigate("/manager/dashboard");
       } else if (role === "admin") {
-        navigate("/admin"); // Update this route as needed
+        navigate("/admin"); 
       } else {
         toast.error("Unknown role. Contact admin.");
       }

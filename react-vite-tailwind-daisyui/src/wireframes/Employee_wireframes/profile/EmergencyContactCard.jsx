@@ -10,8 +10,7 @@ export default function EmergencyContactCard() {
   const [secondaryRelation, setSecondaryRelation] = useState("");
   const [secondaryPhone, setSecondaryPhone] = useState("");
   const [medicalInfo, setMedicalInfo] = useState("");
-  const [exists, setExists] = useState(false); // For deciding create/update
-
+  const [exists, setExists] = useState(false);
   useEffect(() => {
     const fetchEmergency = async () => {
       try {

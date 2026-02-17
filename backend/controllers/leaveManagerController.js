@@ -6,7 +6,6 @@ export const getPendingLeavesForManager = async (req, res) => {
   const user_id = req.user.user_id;
 
   try {
-    // Step 1: Get manager_id
     const managerResult = await pool.query(
       `SELECT manager_id FROM managers WHERE user_id = $1`,
       [user_id]
@@ -18,7 +17,6 @@ export const getPendingLeavesForManager = async (req, res) => {
 
     const manager_id = managerResult.rows[0].manager_id;
 
-    // Step 2: Get pending leaves along with employee info (if available)
     const leavesResult = await pool.query(
       `SELECT l.*, e.first_name AS emp_first, e.last_name AS emp_last
        FROM leaves l
@@ -33,7 +31,6 @@ export const getPendingLeavesForManager = async (req, res) => {
         let first_name = leave.emp_first;
         let last_name = leave.emp_last;
 
-        // Step 3: If employee name not found, check managers table
         if (!first_name) {
           const mgrRes = await pool.query(
             `SELECT first_name, last_name FROM managers WHERE user_id = $1`,
