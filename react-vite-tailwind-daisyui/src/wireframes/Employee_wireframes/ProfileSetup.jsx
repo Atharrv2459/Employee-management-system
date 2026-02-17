@@ -205,10 +205,31 @@ export default function ProfileSetup() {
             <input className="input input-bordered" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             <input className="input input-bordered" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
             <input className="input input-bordered" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
-            <input className="input input-bordered" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+            
+            <div className="form-control">
+  <label className="label">
+    <span className="label-text">Date of Birth</span>
+  </label>
+  <input
+    type="date"
+    className="input input-bordered"
+    value={dob}
+    onChange={(e) => setDob(e.target.value)}
+  />
+</div>
             <input className="input input-bordered" placeholder="Job Title" value={job_title} onChange={(e) => setJob_title(e.target.value)} />
             <input className="input input-bordered" placeholder="Profile Picture URL" value={profile_picture} onChange={(e) => setProfile_picture(e.target.value)} />
-            <input className="input input-bordered" type="date" value={joining_date} onChange={(e) => setJoining_date(e.target.value)} />
+   <div className="form-control">
+  <label className="label">
+    <span className="label-text">Joining Date</span>
+  </label>
+  <input
+    type="date"
+    className="input input-bordered"
+    value={joining_date}
+    onChange={(e) => setJoining_date(e.target.value)}
+  />
+</div>
             <select className="select select-bordered" value={manager_id} onChange={(e) => setManager_id(e.target.value)}>
               <option value="">Select Manager</option>
               {managers.map((mgr) => (

@@ -2,9 +2,49 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 export default function EmployeeTimesheet() {
+
   const [timesheetData, setTimesheetData] = useState([]);
   const [summary, setSummary] = useState({ totalHours: '0h 0m', overtime: '0h 0m', attendance: '0%' });
   const token = localStorage.getItem('token');
+
+
+  const downloadCSV = () => {
+  if (timesheetData.length === 0) {
+    alert("No data to download");
+    return;
+  }
+
+  const headers = ["Date", "Day", "Clock In", "Clock Out", "Work Hours", "Overtime"];
+
+  const rows = timesheetData.map((row) => [
+    row.date,
+    row.day,
+    row.clockIn,
+    row.clockOut,
+    row.workHours,
+    row.overtime,
+  ]);
+
+  let csvContent =
+    headers.join(",") +
+    "\n" +
+    rows.map((e) => e.join(",")).join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+
+  const now = new Date();
+  const fileName = `timesheet_${now.getFullYear()}_${now.getMonth() + 1}.csv`;
+
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 
   const formatToHoursMinutes = (minutes) => {
     const h = Math.floor(minutes / 60);
@@ -81,6 +121,16 @@ export default function EmployeeTimesheet() {
   return (
     <div className="bg-white shadow-md rounded-xl p-6">
       <h2 className="text-xl font-bold mb-4 text-gray-800">Timesheet</h2>
+      <div className="flex justify-between items-center mb-4">
+  <h2 className="text-xl font-bold text-gray-800">Timesheet</h2>
+  <button
+    onClick={downloadCSV}
+    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+  >
+     <b>Download CSV</b>
+  </button>
+</div>
+
       <table className="w-full text-left border-collapse">
         <thead className="bg-gray-100">
           <tr className="text-sm text-gray-600">

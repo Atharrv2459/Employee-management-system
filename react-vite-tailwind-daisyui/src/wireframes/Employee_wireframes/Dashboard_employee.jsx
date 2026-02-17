@@ -3,6 +3,18 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 
+import L from "leaflet";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import OfficeMap from "./OfficeMap";
+
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+
+
 
 
 export default function WebDashboard() {
@@ -25,7 +37,7 @@ const [teamStatus, setTeamStatus] = useState([]);
 
 
 
-  const token = localStorage.getItem("token"); // Use real token
+  const token = localStorage.getItem("token");
 
 
   useEffect(() => {
@@ -260,7 +272,7 @@ fetchTeamStatus();
 </h1>
 
         
-        {/* Header Status Bar */}
+  
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 text-white p-6 rounded-2xl shadow-xl mb-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="relative flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -283,12 +295,12 @@ fetchTeamStatus();
           </div>
         </div>
 
-        {/* Main Dashboard Grid */}
+      
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
           
 
-          {/* Quick Punch Card */}
+        
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -340,7 +352,7 @@ fetchTeamStatus();
             </div>
           </div>
 
-          {/* Weekly Progress Card */}
+       
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -371,7 +383,7 @@ fetchTeamStatus();
             </div>
           </div>
 
-          {/* Leave Balance Card */}
+        
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -426,7 +438,7 @@ fetchTeamStatus();
         </div>
 
 
-        {/* Team Status Card */}
+        
 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 mb-10">
   <div className="p-6">
     <div className="flex items-center gap-3 mb-6">
@@ -467,10 +479,24 @@ fetchTeamStatus();
 </div>
 
 
-        {/* Bottom Section */}
+<div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 mb-10">
+  <div className="p-6">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white text-lg">
+        🗺️
+      </div>
+      <h3 className="text-xl font-bold text-gray-800">Office Location</h3>
+    </div>
+
+    <OfficeMap />
+  </div>
+</div>
+
+
+       
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Time Analysis Card */}
+         
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -493,7 +519,7 @@ fetchTeamStatus();
             </div>
           </div>
 
-          {/* Goal Progress Card */}
+         
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
