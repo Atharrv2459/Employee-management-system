@@ -298,6 +298,7 @@ export default function Manual_entry() {
           </div>
         </div>
       </dialog>
-    </div>
+      <br></br>
+      <br></br>    </div>
   );
 }

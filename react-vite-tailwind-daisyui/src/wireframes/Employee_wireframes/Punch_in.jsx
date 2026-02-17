@@ -5,6 +5,97 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Punch_in() {
   const navigate = useNavigate();
+
+
+// ---------- WebAuthn Helpers ----------
+const bufferToBase64Url = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  let str = "";
+  bytes.forEach((b) => (str += String.fromCharCode(b)));
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+};
+
+const base64UrlToBuffer = (base64url) => {
+  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const buffer = new ArrayBuffer(raw.length);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return buffer;
+};
+
+// ---------- Biometric Verification ----------
+const verifyBiometric = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const optionsRes = await axios.post(
+      "http://localhost:5001/api/webauthn/auth-options",
+      {},
+      { headers: { Authorization: token } }
+    );
+
+    const options = optionsRes.data;
+    console.log("Auth options from backend:", options); // 👈 ADD THIS
+
+    // 🛑 Safety checks
+    if (!options || !options.challenge) {
+      console.error("Missing challenge in auth options:", options);
+      toast.error("Invalid biometric challenge from server");
+      return false;
+    }
+
+    // Convert challenge
+    options.challenge = base64UrlToBuffer(options.challenge);
+
+    if (options.allowCredentials && Array.isArray(options.allowCredentials)) {
+      options.allowCredentials = options.allowCredentials.map((cred) => {
+        if (!cred.id) {
+          console.error("Missing credential id in allowCredentials:", cred);
+          return cred;
+        }
+        return {
+          ...cred,
+          id: base64UrlToBuffer(cred.id),
+        };
+      });
+    }
+
+    const assertion = await navigator.credentials.get({
+      publicKey: options,
+    });
+
+    const authResponse = {
+      id: assertion.id,
+      rawId: bufferToBase64Url(assertion.rawId),
+      type: assertion.type,
+      response: {
+        clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
+        authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
+        signature: bufferToBase64Url(assertion.response.signature),
+        userHandle: assertion.response.userHandle
+          ? bufferToBase64Url(assertion.response.userHandle)
+          : null,
+      },
+    };
+
+    const verifyRes = await axios.post(
+      "http://localhost:5001/api/webauthn/auth-verify",
+      authResponse,
+      { headers: { Authorization: token } }
+    );
+
+    return verifyRes.data.success === true;
+  } catch (err) {
+    console.error("Biometric verification failed:", err);
+    return false;
+  }
+};
+
+
+
+
   const [time, setTime] = useState('');
   const [punch_in, setPunch_in] = useState('');
   const [punch_out, setPunch_out] = useState('');
@@ -80,17 +171,30 @@ export default function Punch_in() {
   }, []);
 
   const handlePunchIn = async () => {
-    try {
-      const res = await axios.post('http://localhost:5001/api/attendance/punch-in', {}, {
-        headers: { Authorization: token },
-      });
-      setPunch_in(new Date(res.data.data.punch_in));
-      toast.success('Punched in successfully');
-      fetchAttendance();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Punch in failed');
+  try {
+    // 🔐 Step 1: Verify biometric first
+    const ok = await verifyBiometric();
+
+    if (!ok) {
+      toast.error("Biometric verification failed. Punch In blocked.");
+      return;
     }
-  };
+
+    // ✅ Step 2: If biometric OK, punch in
+    const res = await axios.post(
+      "http://localhost:5001/api/attendance/punch-in",
+      {},
+      { headers: { Authorization: token } }
+    );
+
+    setPunch_in(new Date(res.data.data.punch_in));
+    toast.success("Punched in successfully");
+    fetchAttendance();
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Punch in failed");
+  }
+};
+
 
   const handlePunchOut = async () => {
     try {

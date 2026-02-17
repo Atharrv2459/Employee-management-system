@@ -92,3 +92,42 @@ export const createUserByAdmin = async (req, res) => {
     res.status(500).json({ error: "Failed to create user" });
   }
 };
+
+
+
+
+// ✅ ADMIN ONLY: Delete user
+export const adminDeleteUser = async (req, res) => {
+  const { id } = req.params;       // user to delete
+  const requester = req.user;      // from JWT middleware
+
+  try {
+    // 1. Check if requester is admin (role_id = 4)
+    if (requester.role_id !== 4) {
+      return res.status(403).json({ message: "Only admin can delete users" });
+    }
+
+    // 2. Optional: Prevent admin from deleting themselves
+    if (requester.user_id === id) {
+      return res.status(400).json({ message: "Admin cannot delete their own account" });
+    }
+
+    // 3. Delete user
+    const result = await pool.query(
+      `DELETE FROM users WHERE user_id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "User deleted successfully",
+      deletedUser: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error deleting user:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};

@@ -12,6 +12,7 @@ import manualEntryRouter from './routers/manualEntryRoutes.js'
 import emergencyContactRouter from './routers/emergencyContactRoutes.js'
 import shiftRouter from './routers/shiftRoutes.js'
 import adminRouter from './routers/adminRoutes.js'
+import webauthRoutes from "./routers/webauthRoutes.js";
 
 import pool from "./db.js";
 const app = express();
@@ -36,6 +37,7 @@ app.use('/api/manual_entry',manualEntryRouter);
 app.use('/api/emergency', emergencyContactRouter);
 app.use('/api/shift', shiftRouter);
 app.use('/api/admin', adminRouter);
+app.use("/api/webauthn", webauthRoutes);
 
 
 

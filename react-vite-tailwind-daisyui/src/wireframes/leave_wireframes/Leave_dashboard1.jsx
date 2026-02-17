@@ -27,6 +27,7 @@ export default function LeaveBalanceDashboard() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to load leave balances",err);
+      console.error("Leave balance error:", err.response || err);
     }
   };
 

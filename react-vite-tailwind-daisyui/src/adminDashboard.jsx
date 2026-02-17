@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -9,6 +10,8 @@ export default function AdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [search, setSearch] = useState("");
 
+
+
   const [newUser, setNewUser] = useState({
     email: "",
     password: "",
@@ -17,9 +20,43 @@ export default function AdminDashboard() {
   });
 
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+
 
   // =======================
-  // Fetch Users (UNCHANGED FEATURE)
+// Delete User (Admin Only)
+// =======================
+const handleDeleteUser = async (userId) => {
+  if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+    return;
+  }
+
+  try {
+    await axios.delete(
+      `http://localhost:5001/api/admin/delete-user/${userId}`,
+      {
+        headers: { Authorization: token },
+      }
+    );
+
+    toast.success("User deleted successfully");
+    fetchUsers(); // Refresh list
+  } catch (err) {
+    console.error(err);
+    toast.error(err.response?.data?.message || "Failed to delete user");
+  }
+};
+
+  // =======================
+  // Logout
+  // =======================
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+  };
+
+  // =======================
+  // Fetch Users
   // =======================
   const fetchUsers = async () => {
     try {
@@ -40,13 +77,6 @@ export default function AdminDashboard() {
   // =======================
   // Helpers
   // =======================
-  const getRoleLabel = (role_id) => {
-    if (role_id === 1) return "Employee";
-    if (role_id === 2) return "Manager";
-    if (role_id === 3) return "Admin";
-    return "Unknown";
-  };
-
   const getRoleBadge = (role_id) => {
     if (role_id === 1) return <span className="badge badge-info">Employee</span>;
     if (role_id === 2) return <span className="badge badge-warning">Manager</span>;
@@ -55,7 +85,7 @@ export default function AdminDashboard() {
   };
 
   // =======================
-  // Edit User (UNCHANGED FEATURE)
+  // Edit User
   // =======================
   const handleEditClick = (user) => {
     setSelectedUser({ ...user });
@@ -79,7 +109,7 @@ export default function AdminDashboard() {
   };
 
   // =======================
-  // Create User (NEW FEATURE)
+  // Create User
   // =======================
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.password) {
@@ -120,81 +150,109 @@ export default function AdminDashboard() {
         .includes(search.toLowerCase())
   );
 
-  // =======================
-  // UI
-  // =======================
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Admin User Management</h1>
-          <p className="text-gray-500">Create, view and update users</p>
+    <div>
+      {/* =======================
+          Navbar (LIKE MANAGER)
+      ======================= */}
+      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50">
+        <div className="navbar-start">
+          <button className="btn btn-ghost text-xl font-bold text-purple-600">
+            Admin Panel
+          </button>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowCreateModal(true)}
-        >
-          + Create User
-        </button>
-      </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          className="input input-bordered w-full max-w-md"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto bg-white rounded-xl shadow border">
-        <table className="table w-full">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Role</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.user_id} className="hover">
-                <td>
-                  {user.first_name} {user.last_name}
-                </td>
-                <td>{user.email}</td>
-                <td>{user.phone || "-"}</td>
-                <td>{getRoleBadge(user.role_id)}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-outline"
-                    onClick={() => handleEditClick(user)}
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-
-            {filteredUsers.length === 0 && (
-              <tr>
-                <td colSpan="5" className="text-center py-6 text-gray-400">
-                  No users found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="navbar-end gap-4">
+          <button
+            onClick={handleLogout}
+            className="btn btn-sm btn-error text-white"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* =======================
-          Edit Modal (EXISTING FEATURE)
+          Page Content
+      ======================= */}
+      <div className="pt-20 p-8 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Admin User Management</h1>
+            <p className="text-gray-500">Create, view and update users</p>
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowCreateModal(true)}
+          >
+            + Create User
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            className="input input-bordered w-full max-w-md"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto bg-white rounded-xl shadow border">
+          <table className="table w-full">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => (
+                <tr key={user.user_id} className="hover">
+                  <td>{user.first_name} {user.last_name}</td>
+                  <td>{user.email}</td>
+                  <td>{user.phone || "-"}</td>
+                  <td>{getRoleBadge(user.role_id)}</td>
+                  <td className="flex gap-2">
+  <button
+    className="btn btn-sm btn-outline"
+    onClick={() => handleEditClick(user)}
+  >
+    Edit
+  </button>
+
+  <button
+    className="btn btn-sm btn-error text-white"
+    onClick={() => handleDeleteUser(user.user_id)}
+  >
+    Delete
+  </button>
+</td>
+
+                </tr>
+              ))}
+
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-6 text-gray-400">
+                    No users found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* =======================
+          Edit Modal
       ======================= */}
       {showEditModal && selectedUser && (
         <div className="modal modal-open">
@@ -241,10 +299,7 @@ export default function AdminDashboard() {
             </select>
 
             <div className="modal-action">
-              <button
-                className="btn"
-                onClick={() => setShowEditModal(false)}
-              >
+              <button className="btn" onClick={() => setShowEditModal(false)}>
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={handleSave}>
@@ -256,7 +311,7 @@ export default function AdminDashboard() {
       )}
 
       {/* =======================
-          Create Modal (NEW FEATURE)
+          Create Modal
       ======================= */}
       {showCreateModal && (
         <div className="modal modal-open">
@@ -304,10 +359,7 @@ export default function AdminDashboard() {
             </select>
 
             <div className="modal-action">
-              <button
-                className="btn"
-                onClick={() => setShowCreateModal(false)}
-              >
+              <button className="btn" onClick={() => setShowCreateModal(false)}>
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={handleCreateUser}>

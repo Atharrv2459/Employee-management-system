@@ -12,4 +12,6 @@ router.patch('/updateUser',verifyToken, updateUser);
 router.delete('/:id', deleteUser);
 router.patch('/change-password', verifyToken, changePassword);
 
+
+
 export default router;
