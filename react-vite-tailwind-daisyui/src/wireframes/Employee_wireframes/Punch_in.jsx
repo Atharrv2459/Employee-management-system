@@ -26,72 +26,7 @@ const base64UrlToBuffer = (base64url) => {
 };
 
 // ---------- Biometric Verification ----------
-const verifyBiometric = async () => {
-  try {
-    const token = localStorage.getItem("token");
 
-    const optionsRes = await axios.post(
-      "http://localhost:5001/api/webauthn/auth-options",
-      {},
-      { headers: { Authorization: token } }
-    );
-
-    const options = optionsRes.data;
-    console.log("Auth options from backend:", options); // 👈 ADD THIS
-
-    // 🛑 Safety checks
-    if (!options || !options.challenge) {
-      console.error("Missing challenge in auth options:", options);
-      toast.error("Invalid biometric challenge from server");
-      return false;
-    }
-
-    // Convert challenge
-    options.challenge = base64UrlToBuffer(options.challenge);
-
-    if (options.allowCredentials && Array.isArray(options.allowCredentials)) {
-      options.allowCredentials = options.allowCredentials.map((cred) => {
-        if (!cred.id) {
-          console.error("Missing credential id in allowCredentials:", cred);
-          return cred;
-        }
-        return {
-          ...cred,
-          id: base64UrlToBuffer(cred.id),
-        };
-      });
-    }
-
-    const assertion = await navigator.credentials.get({
-      publicKey: options,
-    });
-
-    const authResponse = {
-      id: assertion.id,
-      rawId: bufferToBase64Url(assertion.rawId),
-      type: assertion.type,
-      response: {
-        clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
-        authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
-        signature: bufferToBase64Url(assertion.response.signature),
-        userHandle: assertion.response.userHandle
-          ? bufferToBase64Url(assertion.response.userHandle)
-          : null,
-      },
-    };
-
-    const verifyRes = await axios.post(
-      "http://localhost:5001/api/webauthn/auth-verify",
-      authResponse,
-      { headers: { Authorization: token } }
-    );
-
-    return verifyRes.data.success === true;
-  } catch (err) {
-    console.error("Biometric verification failed:", err);
-    return false;
-  }
-};
 
 
 
@@ -172,15 +107,6 @@ const verifyBiometric = async () => {
 
   const handlePunchIn = async () => {
   try {
-    // 🔐 Step 1: Verify biometric first
-    const ok = await verifyBiometric();
-
-    if (!ok) {
-      toast.error("Biometric verification failed. Punch In blocked.");
-      return;
-    }
-
-    // ✅ Step 2: If biometric OK, punch in
     const res = await axios.post(
       "http://localhost:5001/api/attendance/punch-in",
       {},

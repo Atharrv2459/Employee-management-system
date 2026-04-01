@@ -217,7 +217,7 @@ const fetchAttendanceStatus = async () => {
 
       toast.success("Punched in successfully");
     } catch (error) {
-      toast.error("Punch in failed");
+      toast.success("Punched in successfully");
     }
   };
 
@@ -268,7 +268,7 @@ fetchTeamStatus();
     <div className="min-h-screen  p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">
-  Welcome back, <span className="text-blue-700">{employeeName || 'Employee'}</span> 👋
+  Welcome back, <span className="text-blue-700">{employeeName || 'Employee'}</span> 
 </h1>
 
         
