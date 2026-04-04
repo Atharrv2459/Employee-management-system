@@ -54,12 +54,12 @@ export default function EmergencyContactCard() {
       };
 
       if (exists) {
-        await axios.post("http://localhost:5001/api/emergency/create", payload, {
+        await axios.patch("http://localhost:5001/api/emergency/update", payload, {
           headers: { Authorization: token },
         });
         toast.success("Emergency contact updated");
       } else {
-        await axios.post("http://localhost:5001/api/emergency-contacts", payload, {
+        await axios.post("http://localhost:5001/api/emergency/create", payload, {
           headers: { Authorization: token },
         });
         toast.success("Emergency contact created");

@@ -12,7 +12,7 @@ export default function ManagerManualApproval() {
 
   const fetchEntries = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/manager/manual_entries", {
+      const res = await axios.get("http://localhost:5001/api/manual_entry/pending", {
         headers: { Authorization: token },
       });
       const all = res.data.data || [];
@@ -34,7 +34,7 @@ export default function ManagerManualApproval() {
 
   const handleApprove = async (id) => {
     try {
-      await axios.put(`http://localhost:5001/api/manual_entry/approve/${id}`, {}, {
+      await axios.patch(`http://localhost:5001/api/manual_entry/${id}/approve`, {}, {
         headers: { Authorization: token },
       });
       toast.success("Approved");
@@ -46,7 +46,7 @@ export default function ManagerManualApproval() {
 
   const handleReject = async () => {
     try {
-      await axios.put(`http://localhost:5001/api/manual_entry/reject/${selectedEntry.manual_id}`,
+      await axios.patch(`http://localhost:5001/api/manual_entry/${selectedEntry.manual_id}/reject`,
         { rejection_reason: rejectionReason },
         { headers: { Authorization: token } }
       );

@@ -13,7 +13,7 @@ export default function ShiftPreferenceCard() {
     const fetchShift = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/shifts", {
+        const res = await axios.get("http://localhost:5001/api/shift/get", {
           headers: { Authorization: token },
         });
 
@@ -46,12 +46,12 @@ export default function ShiftPreferenceCard() {
       };
 
       if (exists) {
-        await axios.put("http://localhost:5001/api/shifts", payload, {
+        await axios.put("http://localhost:5001/api/shift/update", payload, {
           headers: { Authorization: token },
         });
         toast.success("Shift preferences updated");
       } else {
-        await axios.post("http://localhost:5001/api/shifts", payload, {
+        await axios.post("http://localhost:5001/api/shift/create", payload, {
           headers: { Authorization: token },
         });
         toast.success("Shift preferences created");

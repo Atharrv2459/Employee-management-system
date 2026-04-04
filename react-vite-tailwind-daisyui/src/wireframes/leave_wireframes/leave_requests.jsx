@@ -55,7 +55,7 @@ const openEditModal = (leave) => {
 
   const handleCancel = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/leaves/cancel/${id}`, {
+      await axios.delete(`http://localhost:5001/api/leaves/cancel/${id}`, {
         headers: { Authorization: token },
       });
       toast.success("Leave cancelled");

@@ -104,14 +104,14 @@ export const approveManualEntry = async (req, res) => {
 
   try {
     const manager = await pool.query(
-      `SELECT employee_id FROM employees WHERE user_id = $1`,
+      `SELECT manager_id FROM managers WHERE user_id = $1`,
       [user_id]
     );
 
     if (manager.rows.length === 0)
       return res.status(403).json({ message: "Not a valid manager" });
 
-    const manager_id = manager.rows[0].employee_id;
+    const manager_id = manager.rows[0].manager_id;
 
     const result = await pool.query(
       `UPDATE manual_entries 
@@ -138,14 +138,14 @@ export const rejectManualEntry = async (req, res) => {
 
   try {
     const manager = await pool.query(
-      `SELECT employee_id FROM employees WHERE user_id = $1`,
+      `SELECT manager_id FROM managers WHERE user_id = $1`,
       [user_id]
     );
 
     if (manager.rows.length === 0)
       return res.status(403).json({ message: "Not a valid manager" });
 
-    const manager_id = manager.rows[0].employee_id;
+    const manager_id = manager.rows[0].manager_id;
 
     const result = await pool.query(
       `UPDATE manual_entries 
@@ -250,6 +250,39 @@ export const deleteManualEntry = async (req, res) => {
         .json({ message: "Entry not found or already submitted" });
 
     res.json({ message: "Manual entry deleted", data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get pending manual entries for manager approval
+export const getPendingEntriesForManager = async (req, res) => {
+  const user_id = req.user.user_id;
+
+  try {
+    // Get manager_id from managers table
+    const manager = await pool.query(
+      `SELECT manager_id FROM managers WHERE user_id = $1`,
+      [user_id]
+    );
+
+    if (manager.rows.length === 0) {
+      return res.status(403).json({ message: "Not a valid manager" });
+    }
+
+    const manager_id = manager.rows[0].manager_id;
+
+    // Get all manual entries assigned to this manager
+    const result = await pool.query(
+      `SELECT me.*, e.first_name, e.last_name 
+       FROM manual_entries me
+       JOIN employees e ON me.employee_id = e.employee_id
+       WHERE me.approval_manager_id = $1
+       ORDER BY me.created_at DESC`,
+      [manager_id]
+    );
+
+    res.status(200).json({ data: result.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
