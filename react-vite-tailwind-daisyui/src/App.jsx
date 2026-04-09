@@ -27,6 +27,17 @@ import ManagerReport from "./wireframes/Manager_wireframes/Manager_report";
 import ManagerTimesheet from "./wireframes/Manager_wireframes/Timesheet_manager";
 import EmployeeTimesheet from "./wireframes/Employee_wireframes/Timesheet_employee";
 import AdminDashboard from "./adminDashboard";
+import DepartmentManagement from "./wireframes/admin/DepartmentManagement";
+import OfficeLocationManagement from "./wireframes/admin/OfficeLocationManagement";
+import ShiftTemplateManagement from "./wireframes/admin/ShiftTemplateManagement";
+import ShiftCalendar from "./wireframes/admin/ShiftCalendar";
+import ShiftPreferences from "./wireframes/Employee_wireframes/ShiftPreferences";
+import SalaryManagement from "./wireframes/admin/SalaryManagement";
+import PayrollProcessing from "./wireframes/admin/PayrollProcessing";
+import MyPayslips from "./wireframes/Employee_wireframes/MyPayslips";
+import JobPostings from "./wireframes/admin/JobPostings";
+import ApplicationsManagement from "./wireframes/admin/ApplicationsManagement";
+import CareersPage from "./wireframes/CareersPage";
 
 
 export default function App() {
@@ -37,6 +48,7 @@ export default function App() {
         {/* Public Routes */}
         <Route path="/" element={<UserLogin />} />
         <Route path="/register" element={<UserRegister />} />
+        <Route path="/careers" element={<CareersPage />} />
 
         {/* Employee Routes */}
         <Route element={<EmployeeLayout />}>
@@ -63,8 +75,20 @@ export default function App() {
           <Route path="/manager/leaves/leave-history" element={<LeaveHistory />} />
           <Route path="/manager/timesheet" element={<ManagerTimesheet />} />
         </Route>
-        <Route path="/admin" element={<AdminDashboard />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/departments" element={<DepartmentManagement />} />
+        <Route path="/admin/locations" element={<OfficeLocationManagement />} />
+        <Route path="/admin/shift-templates" element={<ShiftTemplateManagement />} />
+        <Route path="/admin/shift-calendar" element={<ShiftCalendar />} />
+        <Route path="/admin/payroll" element={<SalaryManagement />} />
+        <Route path="/admin/payroll/process" element={<PayrollProcessing />} />
+        <Route path="/admin/recruitment" element={<JobPostings />} />
+        <Route path="/admin/recruitment/applications" element={<ApplicationsManagement />} />
 
+        {/* Employee Shift Preferences & Payslips */}
+        <Route element={<EmployeeLayout />}>
+          <Route path="/employee/shift-preferences" element={<ShiftPreferences />} />
+          <Route path="/employee/payslips" element={<MyPayslips />} />
         </Route>
 
       </Routes>

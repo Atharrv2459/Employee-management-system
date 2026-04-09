@@ -1,8 +1,10 @@
 import pool from "../db.js";
+import { recordAttendanceLocation } from "../middleware/geolocationMiddleware.js";
 
-// ✅ PUNCH IN
+// ✅ PUNCH IN (Updated with Geolocation)
 export const punchIn = async (req, res) => {
   const user_id = req.user.user_id;
+  const geolocationResult = req.geolocationResult;
 
   try {
     // Check if user already punched in today
@@ -15,25 +17,69 @@ export const punchIn = async (req, res) => {
       return res.status(400).json({ message: "Already punched in today" });
     }
 
-    const result = await pool.query(
-      `INSERT INTO attendance (user_id, punch_in) VALUES ($1, NOW()) RETURNING *`,
-      [user_id]
-    );
+    // Start transaction for attendance + location recording
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    res.status(201).json({ data: result.rows[0] });
+      // Insert attendance record with geolocation info
+      const attendanceResult = await client.query(
+        `INSERT INTO attendance (user_id, punch_in, work_location_type, verified_location) 
+         VALUES ($1, NOW(), $2, $3) 
+         RETURNING *`,
+        [
+          user_id,
+          geolocationResult?.workLocationType || "unknown",
+          geolocationResult?.isValid || false,
+        ]
+      );
+
+      const attendance = attendanceResult.rows[0];
+
+      // Record location data if geolocation was captured
+      let locationRecord = null;
+      if (geolocationResult && !geolocationResult.validationSkipped) {
+        locationRecord = await recordAttendanceLocation(
+          attendance.id,
+          "punch_in",
+          geolocationResult
+        );
+      }
+
+      await client.query("COMMIT");
+
+      res.status(201).json({
+        message: "Punched in successfully",
+        data: attendance,
+        location: locationRecord ? {
+          type: "punch_in",
+          office: geolocationResult.matchedOffice?.name || null,
+          remote_location: geolocationResult.matchedRemoteLocation?.name || null,
+          work_type: geolocationResult.workLocationType,
+          distance_to_office: geolocationResult.nearestOffice?.distance || null,
+        } : null,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (err) {
+    console.error("Punch in error:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ PUNCH OUT
+// ✅ PUNCH OUT (Updated with Geolocation)
 export const punchOut = async (req, res) => {
   const user_id = req.user.user_id;
+  const geolocationResult = req.geolocationResult;
 
   try {
     // Check if user already punched out today
     const existing = await pool.query(
-      `SELECT * FROM attendance WHERE user_id = $1 AND punch_out::date = CURRENT_DATE`,
+      `SELECT * FROM attendance WHERE user_id = $1 AND punch_out IS NOT NULL AND punch_in::date = CURRENT_DATE`,
       [user_id]
     );
 
@@ -41,38 +87,101 @@ export const punchOut = async (req, res) => {
       return res.status(400).json({ message: "Already punched out today" });
     }
 
-    // Update punch_out and duration
-    const result = await pool.query(
-      `UPDATE attendance 
-       SET punch_out = NOW(), 
-           attendance_duration = NOW() - punch_in 
-       WHERE user_id = $1 AND punch_in::date = CURRENT_DATE 
-       RETURNING *`,
+    // Get today's attendance record
+    const todayAttendance = await pool.query(
+      `SELECT * FROM attendance WHERE user_id = $1 AND punch_in::date = CURRENT_DATE AND punch_out IS NULL`,
       [user_id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "No punch-in found today" });
+    if (todayAttendance.rows.length === 0) {
+      return res.status(404).json({ message: "No active punch-in found today" });
     }
 
-    res.status(200).json({ data: result.rows[0] });
+    // Start transaction for attendance update + location recording
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Update attendance with punch out
+      const result = await client.query(
+        `UPDATE attendance 
+         SET punch_out = NOW(), 
+             attendance_duration = NOW() - punch_in,
+             verified_location = CASE 
+               WHEN verified_location = true AND $2 = true THEN true
+               WHEN $2 = true THEN true
+               ELSE verified_location
+             END
+         WHERE user_id = $1 AND punch_in::date = CURRENT_DATE AND punch_out IS NULL
+         RETURNING *`,
+        [user_id, geolocationResult?.isValid || false]
+      );
+
+      const attendance = result.rows[0];
+
+      // Record location data for punch out
+      let locationRecord = null;
+      if (geolocationResult && !geolocationResult.validationSkipped) {
+        locationRecord = await recordAttendanceLocation(
+          attendance.id,
+          "punch_out",
+          geolocationResult
+        );
+      }
+
+      await client.query("COMMIT");
+
+      res.status(200).json({
+        message: "Punched out successfully",
+        data: attendance,
+        location: locationRecord ? {
+          type: "punch_out",
+          office: geolocationResult.matchedOffice?.name || null,
+          remote_location: geolocationResult.matchedRemoteLocation?.name || null,
+          work_type: geolocationResult.workLocationType,
+          distance_to_office: geolocationResult.nearestOffice?.distance || null,
+        } : null,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (err) {
+    console.error("Punch out error:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ GET MY ATTENDANCE HISTORY
+// ✅ GET MY ATTENDANCE HISTORY (Updated with Location Data)
 export const getMyAttendance = async (req, res) => {
   const user_id = req.user.user_id;
 
   try {
     const result = await pool.query(
-      `SELECT * FROM attendance WHERE user_id = $1 ORDER BY punch_in DESC`,
+      `SELECT a.*, 
+              ol_in.name as punch_in_office,
+              ol_out.name as punch_out_office,
+              al_in.latitude as punch_in_lat,
+              al_in.longitude as punch_in_lng,
+              al_in.is_within_geofence as punch_in_valid,
+              al_out.latitude as punch_out_lat,
+              al_out.longitude as punch_out_lng,
+              al_out.is_within_geofence as punch_out_valid
+       FROM attendance a
+       LEFT JOIN attendance_locations al_in ON a.id = al_in.attendance_id AND al_in.location_type = 'punch_in'
+       LEFT JOIN attendance_locations al_out ON a.id = al_out.attendance_id AND al_out.location_type = 'punch_out'
+       LEFT JOIN office_locations ol_in ON al_in.office_location_id = ol_in.id
+       LEFT JOIN office_locations ol_out ON al_out.office_location_id = ol_out.id
+       WHERE a.user_id = $1 
+       ORDER BY a.punch_in DESC`,
       [user_id]
     );
 
     res.status(200).json({ data: result.rows });
   } catch (err) {
+    console.error("Get attendance error:", err);
     res.status(500).json({ error: err.message });
   }
 };

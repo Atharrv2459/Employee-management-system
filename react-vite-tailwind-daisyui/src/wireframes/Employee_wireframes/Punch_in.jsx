@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { FiMapPin, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { useGeolocation } from '../../useGeolocation';
 
 export default function Punch_in() {
   const navigate = useNavigate();
+  const { location, error: geoError, loading: geoLoading, getLocation, isSupported } = useGeolocation();
+
+  // Location validation state
+  const [locationStatus, setLocationStatus] = useState(null); // null, 'checking', 'valid', 'invalid'
+  const [nearestOffice, setNearestOffice] = useState(null);
 
 
 // ---------- WebAuthn Helpers ----------
@@ -39,6 +46,46 @@ const base64UrlToBuffer = (base64url) => {
   const [remainingHours, setRemainingHours] = useState('');
 
   const token = localStorage.getItem('token');
+
+  // Check geofence when location changes
+  useEffect(() => {
+    if (location) {
+      checkGeofence(location.latitude, location.longitude);
+    }
+  }, [location]);
+
+  // Auto-fetch location on mount
+  useEffect(() => {
+    if (isSupported) {
+      getLocation();
+    }
+  }, []);
+
+  const checkGeofence = async (lat, lng) => {
+    setLocationStatus('checking');
+    try {
+      const res = await axios.post(
+        'http://localhost:5001/api/locations/check-geofence',
+        { latitude: lat, longitude: lng },
+        { headers: { Authorization: token } }
+      );
+      
+      setNearestOffice(res.data.nearest_office);
+      setLocationStatus(res.data.is_within_geofence ? 'valid' : 'invalid');
+    } catch (error) {
+      console.error('Geofence check failed:', error);
+      setLocationStatus('invalid');
+    }
+  };
+
+  const refreshLocation = async () => {
+    try {
+      await getLocation();
+      toast.success('Location refreshed');
+    } catch (err) {
+      toast.error(err || 'Failed to get location');
+    }
+  };
 
   const formatDuration = (ms) => {
     if (!ms || isNaN(ms)) return '-';
@@ -106,32 +153,76 @@ const base64UrlToBuffer = (base64url) => {
   }, []);
 
   const handlePunchIn = async () => {
-  try {
-    const res = await axios.post(
-      "http://localhost:5001/api/attendance/punch-in",
-      {},
-      { headers: { Authorization: token } }
-    );
+    // Get fresh location before punching
+    try {
+      let currentLocation = location;
+      if (!currentLocation) {
+        currentLocation = await getLocation();
+      }
 
-    setPunch_in(new Date(res.data.data.punch_in));
-    toast.success("Punched in successfully");
-    fetchAttendance();
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Punch in failed");
-  }
-};
+      const res = await axios.post(
+        "http://localhost:5001/api/attendance/punch-in",
+        {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          accuracy: currentLocation.accuracy,
+        },
+        { headers: { Authorization: token } }
+      );
+
+      setPunch_in(new Date(res.data.data.punch_in));
+      
+      // Show location info in success message
+      if (res.data.location) {
+        const locInfo = res.data.location.office || res.data.location.remote_location || 'Unknown';
+        toast.success(`Punched in at ${locInfo}`);
+      } else {
+        toast.success("Punched in successfully");
+      }
+      
+      fetchAttendance();
+    } catch (error) {
+      const errMsg = error.response?.data?.error || error.response?.data?.message || "Punch in failed";
+      toast.error(errMsg);
+      
+      // If location error, show details
+      if (error.response?.data?.code === 'LOCATION_NOT_APPROVED') {
+        setLocationStatus('invalid');
+      }
+    }
+  };
 
 
   const handlePunchOut = async () => {
     try {
-      const res = await axios.post('http://localhost:5001/api/attendance/punch-out', {}, {
-        headers: { Authorization: token },
-      });
+      let currentLocation = location;
+      if (!currentLocation) {
+        currentLocation = await getLocation();
+      }
+
+      const res = await axios.post(
+        'http://localhost:5001/api/attendance/punch-out',
+        {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          accuracy: currentLocation.accuracy,
+        },
+        { headers: { Authorization: token } }
+      );
+      
       setPunch_out(new Date(res.data.data.punch_out));
-      toast.success('Punched out successfully');
+      
+      if (res.data.location) {
+        const locInfo = res.data.location.office || res.data.location.remote_location || 'Unknown';
+        toast.success(`Punched out at ${locInfo}`);
+      } else {
+        toast.success('Punched out successfully');
+      }
+      
       fetchAttendance();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Punch out failed');
+      const errMsg = error.response?.data?.error || error.response?.data?.message || 'Punch out failed';
+      toast.error(errMsg);
     }
   };
 
@@ -146,6 +237,22 @@ const base64UrlToBuffer = (base64url) => {
   return (
   <div className="flex flex-col p-6 space-y-10 bg-gray-50 min-h-screen">
     
+    {/* Location Status Banner */}
+    {!isSupported && (
+      <div className="alert alert-warning">
+        <FiAlertCircle className="text-xl" />
+        <span>Your browser doesn't support geolocation. Some features may be limited.</span>
+      </div>
+    )}
+    
+    {geoError && (
+      <div className="alert alert-error">
+        <FiAlertCircle className="text-xl" />
+        <span>{geoError}</span>
+        <button className="btn btn-sm" onClick={refreshLocation}>Retry</button>
+      </div>
+    )}
+
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Left - Clock and Actions */}
       <div className="card bg-white w-full lg:w-1/2 rounded-xl shadow-md p-6 flex flex-col items-center border">
@@ -158,16 +265,62 @@ const base64UrlToBuffer = (base64url) => {
           })}
         </p>
 
-        <div className="text-5xl font-bold text-gray-800 mb-8">{time}</div>
+        <div className="text-5xl font-bold text-gray-800 mb-4">{time}</div>
 
-        <button onClick={handlePunchIn} className= "btn w-48 bg-blue-600 text-white mt-4 hover:bg-blue-700">
-          Punch In
+        {/* Location Status Indicator */}
+        <div className="mb-6 w-full max-w-xs">
+          {geoLoading || locationStatus === 'checking' ? (
+            <div className="flex items-center justify-center gap-2 text-gray-500 py-2">
+              <span className="loading loading-spinner loading-sm"></span>
+              <span className="text-sm">Checking location...</span>
+            </div>
+          ) : locationStatus === 'valid' ? (
+            <div className="flex items-center justify-center gap-2 text-green-600 py-2 bg-green-50 rounded-lg">
+              <FiCheckCircle />
+              <span className="text-sm font-medium">
+                {nearestOffice ? `At ${nearestOffice.name}` : 'Location verified'}
+              </span>
+            </div>
+          ) : locationStatus === 'invalid' ? (
+            <div className="flex flex-col items-center gap-1 text-orange-600 py-2 bg-orange-50 rounded-lg px-3">
+              <div className="flex items-center gap-2">
+                <FiAlertCircle />
+                <span className="text-sm font-medium">Outside office area</span>
+              </div>
+              {nearestOffice && (
+                <span className="text-xs text-gray-500">
+                  Nearest: {nearestOffice.name} ({nearestOffice.distance}m away)
+                </span>
+              )}
+            </div>
+          ) : location ? (
+            <div className="flex items-center justify-center gap-2 text-blue-600 py-2 bg-blue-50 rounded-lg">
+              <FiMapPin />
+              <span className="text-sm">Location captured</span>
+            </div>
+          ) : (
+            <button 
+              onClick={refreshLocation}
+              className="btn btn-ghost btn-sm gap-2 text-gray-500"
+            >
+              <FiMapPin /> Enable Location
+            </button>
+          )}
+        </div>
+
+        <button 
+          onClick={handlePunchIn} 
+          disabled={geoLoading}
+          className="btn w-48 bg-blue-600 text-white mt-2 hover:bg-blue-700 disabled:bg-gray-400"
+        >
+          {geoLoading ? <span className="loading loading-spinner loading-sm"></span> : 'Punch In'}
         </button>
         <button
           onClick={handlePunchOut}
-          className="btn w-48 bg-blue-600 text-white mt-4 hover:bg-blue-700"
+          disabled={geoLoading}
+          className="btn w-48 bg-blue-600 text-white mt-4 hover:bg-blue-700 disabled:bg-gray-400"
         >
-          Punch Out
+          {geoLoading ? <span className="loading loading-spinner loading-sm"></span> : 'Punch Out'}
         </button>
         <button
           onClick={() => navigate('/employee/manual-entry')}

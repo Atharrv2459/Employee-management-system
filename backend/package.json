@@ -13,6 +13,7 @@
   "type": "module",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@simplewebauthn/server": "^13.2.2",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",

@@ -13,6 +13,11 @@ import emergencyContactRouter from './routers/emergencyContactRoutes.js'
 import shiftRouter from './routers/shiftRoutes.js'
 import adminRouter from './routers/adminRoutes.js'
 import webauthRoutes from "./routers/webauthRoutes.js";
+import departmentRouter from './routers/departmentRoutes.js'
+import locationRouter from './routers/locationRoutes.js'
+import shiftScheduleRouter from './routers/shiftScheduleRoutes.js'
+import payrollRouter from './routers/payrollRoutes.js'
+import recruitmentRouter from './routers/recruitmentRoutes.js'
 
 import pool from "./db.js";
 const app = express();
@@ -38,6 +43,11 @@ app.use('/api/emergency', emergencyContactRouter);
 app.use('/api/shift', shiftRouter);
 app.use('/api/admin', adminRouter);
 app.use("/api/webauthn", webauthRoutes);
+app.use('/api/departments', departmentRouter);
+app.use('/api/locations', locationRouter);
+app.use('/api/shift-schedule', shiftScheduleRouter);
+app.use('/api/payroll', payrollRouter);
+app.use('/api/recruitment', recruitmentRouter);
 
 
 

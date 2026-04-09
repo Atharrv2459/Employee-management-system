@@ -162,6 +162,17 @@ const handleDeleteUser = async (userId) => {
           </button>
         </div>
 
+        <div className="navbar-center hidden lg:flex">
+          <ul className="menu menu-horizontal px-1 gap-2">
+            <li><button onClick={() => navigate('/admin')} className="btn btn-ghost btn-sm">Users</button></li>
+            <li><button onClick={() => navigate('/admin/departments')} className="btn btn-ghost btn-sm">Departments</button></li>
+            <li><button onClick={() => navigate('/admin/locations')} className="btn btn-ghost btn-sm">Locations</button></li>
+            <li><button onClick={() => navigate('/admin/shift-calendar')} className="btn btn-ghost btn-sm">Shifts</button></li>
+            <li><button onClick={() => navigate('/admin/payroll')} className="btn btn-ghost btn-sm">Payroll</button></li>
+            <li><button onClick={() => navigate('/admin/recruitment')} className="btn btn-ghost btn-sm">Recruitment</button></li>
+          </ul>
+        </div>
+
         <div className="navbar-end gap-4">
           <button
             onClick={handleLogout}

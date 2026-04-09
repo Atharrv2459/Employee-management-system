@@ -24,6 +24,8 @@ export default function EmployeeLayout() {
             <li><a className="font-semibold" onClick={() => navigate('/employee/punch')}>Punch In/Out</a></li>
              <li><a className="font-semibold" onClick={() => navigate('/employee/manual-entry')}>Manual entry</a></li>
               <li><a className="font-semibold" onClick={() => navigate('/employee/timesheet')}>Timesheet</a></li>
+              <li><a className="font-semibold" onClick={() => navigate('/employee/shift-preferences')}>Shifts</a></li>
+              <li><a className="font-semibold" onClick={() => navigate('/employee/payslips')}>Payslips</a></li>
           </ul>
         </div>
 
