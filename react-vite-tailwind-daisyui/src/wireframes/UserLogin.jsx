@@ -54,8 +54,7 @@ console.log("Logged in role:", role);
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center text-gray-800">Time Management</h1>
-        <p className="text-center text-sm text-gray-500">SAP SuccessFactors Integration</p>
+     
 
         <form onSubmit={handleLogin}>
           {/* Email / Employee ID */}
