@@ -1,6 +1,12 @@
 import pool from "../db.js";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
+import { PDFParse } from "pdf-parse";
+import mammoth from "mammoth";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 
+console.log("✅ Using NEW Gemini SDK");
 // =====================================================
 // JOB POSTINGS
 // =====================================================
@@ -215,102 +221,344 @@ export const updateJob = async (req, res) => {
 // CANDIDATES & APPLICATIONS
 // =====================================================
 
+const emptyToNull = (v) => {
+  if (v == null) return null;
+  if (typeof v === "string" && v.trim() === "") return null;
+  return v;
+};
+
+const parseNumberOrNull = (v) => {
+  v = emptyToNull(v);
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+const parseIntOrNull = (v) => {
+  v = emptyToNull(v);
+  if (v == null) return null;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : null;
+};
+
+const parseSkillsInput = (skills) => {
+  skills = emptyToNull(skills);
+  if (!skills) return null;
+
+  if (Array.isArray(skills)) {
+    const list = skills.map((s) => String(s).trim()).filter(Boolean);
+    return list.length ? list : null;
+  }
+
+  if (typeof skills === "string") {
+    const s = skills.trim();
+    // If client sent JSON array as string
+    if (s.startsWith("[") && s.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) {
+          const list = parsed.map((x) => String(x).trim()).filter(Boolean);
+          return list.length ? list : null;
+        }
+      } catch {
+        // fall through
+      }
+    }
+
+    const list = s.split(",").map((x) => x.trim()).filter(Boolean);
+    return list.length ? list : null;
+  }
+
+  return null;
+};
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const RESUMES_DIR = path.join(__dirname, "..", "uploads", "resumes");
+
+const guessResumeExt = (file) => {
+  const name = file?.originalname || "";
+  const ext = name ? path.extname(name).toLowerCase() : "";
+  const mime = (file?.mimetype || "").toLowerCase();
+
+  if (ext === ".pdf" || mime === "application/pdf") return ".pdf";
+  if (ext === ".docx" || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return ".docx";
+  if (ext === ".txt" || mime.startsWith("text/")) return ".txt";
+
+  return ext || "";
+};
+
+const extractResumeTextFromFile = async (file) => {
+  const name = file?.originalname || "";
+  const ext = name ? path.extname(name).toLowerCase().replace(".", "") : "";
+  const mime = (file?.mimetype || "").toLowerCase();
+  const buffer = file?.buffer;
+
+  if (!buffer) throw new Error("Missing resume file buffer");
+
+  const isPdf = mime === "application/pdf" || ext === "pdf";
+  const isDocx =
+    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    ext === "docx";
+  const isTxt = mime.startsWith("text/") || ext === "txt";
+
+  if (isPdf) {
+    const parser = new PDFParse({ data: buffer });
+    try {
+      const result = await parser.getText();
+      return result?.text || "";
+    } finally {
+      await parser.destroy().catch(() => {});
+    }
+  }
+
+  if (isDocx) {
+    const result = await mammoth.extractRawText({ buffer });
+    return result?.value || "";
+  }
+
+  if (isTxt) {
+    return buffer.toString("utf8");
+  }
+
+  throw new Error(`Unsupported resume file type: ${ext || mime || "unknown"}`);
+};
+
+const saveResumeFileToDisk = async (file, candidateId) => {
+  const buffer = file?.buffer;
+  if (!buffer) throw new Error("Missing resume file buffer");
+
+  const ext = guessResumeExt(file);
+  if (![".pdf", ".docx", ".txt"].includes(ext)) {
+    throw new Error(`Unsupported resume file type: ${ext || file?.mimetype || "unknown"}`);
+  }
+
+  await fs.mkdir(RESUMES_DIR, { recursive: true });
+
+  const safeName = `candidate-${candidateId}-${Date.now()}${ext}`;
+  const absPath = path.join(RESUMES_DIR, safeName);
+  await fs.writeFile(absPath, buffer);
+
+  return {
+    resume_path: `uploads/resumes/${safeName}`,
+    resume_filename: file?.originalname || safeName
+  };
+};
+
 // Submit application (public)
 export const submitApplication = async (req, res) => {
   const {
-    job_id, email, first_name, last_name, phone,
-    current_company, current_title, experience_years,
-    skills, linkedin_url, portfolio_url,
-    cover_letter, expected_salary, notice_period_days, available_from,
-    source, source_details, screening_answers
+    job_id,
+    email,
+    first_name,
+    last_name,
+    phone,
+    current_company,
+    current_title,
+    experience_years,
+    skills,
+    linkedin_url,
+    portfolio_url,
+    cover_letter,
+    expected_salary,
+    notice_period_days,
+    available_from,
+    source,
+    source_details,
+    screening_answers,
+    resume_text
   } = req.body;
 
   const client = await pool.connect();
+  let savedResumeAbsPath = null;
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
+
+    const experienceYearsNum = parseNumberOrNull(experience_years);
+    const expectedSalaryNum = parseNumberOrNull(expected_salary);
+    const noticePeriodDaysInt = parseIntOrNull(notice_period_days);
+    const availableFromDate = emptyToNull(available_from);
+    const skillsArr = parseSkillsInput(skills);
+
+    let finalResumeText = emptyToNull(resume_text);
+    if (req.file) {
+      try {
+        finalResumeText = await extractResumeTextFromFile(req.file);
+      } catch (e) {
+        return res.status(400).json({ error: e?.message || "Failed to read resume file" });
+      }
+    }
+    finalResumeText = emptyToNull(finalResumeText);
+
+    if (!job_id || !email || !first_name || !last_name || !phone) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    if (!finalResumeText) {
+      return res.status(400).json({ error: "Resume is required" });
+    }
 
     // Check if job exists and is published
-    const job = await client.query(`SELECT * FROM job_postings WHERE id = $1 AND status = 'published'`, [job_id]);
+    const job = await client.query(
+      `SELECT id FROM job_postings WHERE id = $1 AND status = 'published'`,
+      [job_id]
+    );
     if (job.rows.length === 0) {
       return res.status(404).json({ error: "Job not found or not accepting applications" });
     }
 
     // Create or get candidate
     let candidate = await client.query(`SELECT * FROM candidates WHERE email = $1`, [email]);
-    
+
     if (candidate.rows.length === 0) {
-      candidate = await client.query(`
+      candidate = await client.query(
+        `
         INSERT INTO candidates 
         (email, first_name, last_name, phone, current_company, current_title,
          experience_years, skills, linkedin_url, portfolio_url, source, source_details)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
-      `, [email, first_name, last_name, phone, current_company, current_title,
-          experience_years, skills ? JSON.stringify(skills) : null, 
-          linkedin_url, portfolio_url, source || 'website', source_details]);
+      `,
+        [
+          email,
+          first_name,
+          last_name,
+          phone,
+          emptyToNull(current_company),
+          emptyToNull(current_title),
+          experienceYearsNum,
+          skillsArr ? JSON.stringify(skillsArr) : null,
+          emptyToNull(linkedin_url),
+          emptyToNull(portfolio_url),
+          source || "website",
+          emptyToNull(source_details)
+        ]
+      );
     } else {
-      // Update candidate info
-      candidate = await client.query(`
+      candidate = await client.query(
+        `
         UPDATE candidates SET
-          first_name = $1, last_name = $2, phone = COALESCE($3, phone),
+          first_name = $1,
+          last_name = $2,
+          phone = COALESCE($3, phone),
           current_company = COALESCE($4, current_company),
           current_title = COALESCE($5, current_title),
           experience_years = COALESCE($6, experience_years),
+          linkedin_url = COALESCE($7, linkedin_url),
+          portfolio_url = COALESCE($8, portfolio_url),
+          skills = COALESCE($9, skills),
           updated_at = CURRENT_TIMESTAMP
-        WHERE email = $7
+        WHERE email = $10
         RETURNING *
-      `, [first_name, last_name, phone, current_company, current_title, experience_years, email]);
+      `,
+        [
+          first_name,
+          last_name,
+          emptyToNull(phone),
+          emptyToNull(current_company),
+          emptyToNull(current_title),
+          experienceYearsNum,
+          emptyToNull(linkedin_url),
+          emptyToNull(portfolio_url),
+          skillsArr ? JSON.stringify(skillsArr) : null,
+          email
+        ]
+      );
     }
 
     const candidateId = candidate.rows[0].id;
 
     // Check if already applied
-    const existingApp = await client.query(`
-      SELECT * FROM job_applications WHERE job_id = $1 AND candidate_id = $2
-    `, [job_id, candidateId]);
+    const existingApp = await client.query(
+      `SELECT 1 FROM job_applications WHERE job_id = $1 AND candidate_id = $2`,
+      [job_id, candidateId]
+    );
 
     if (existingApp.rows.length > 0) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       return res.status(400).json({ error: "You have already applied for this position" });
     }
 
+    // Save uploaded resume file (so HR can open/download the original PDF)
+    if (req.file) {
+      try {
+        const saved = await saveResumeFileToDisk(req.file, candidateId);
+        const baseName = path.basename(saved.resume_path || "");
+        savedResumeAbsPath = baseName ? path.join(RESUMES_DIR, baseName) : null;
+
+        await client.query(
+          `UPDATE candidates SET resume_path = $1, resume_filename = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+          [saved.resume_path, saved.resume_filename, candidateId]
+        );
+      } catch (e) {
+        await client.query("ROLLBACK");
+        if (savedResumeAbsPath) await fs.unlink(savedResumeAbsPath).catch(() => {});
+        return res.status(400).json({ error: e?.message || "Failed to save resume file" });
+      }
+    }
+
     // Create application
-    const application = await client.query(`
+    const application = await client.query(
+      `
       INSERT INTO job_applications 
-      (job_id, candidate_id, cover_letter, expected_salary, notice_period_days, available_from)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      (job_id, candidate_id, cover_letter, expected_salary, notice_period_days, available_from, resume_text)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
-    `, [job_id, candidateId, cover_letter, expected_salary, notice_period_days, available_from]);
+    `,
+      [
+        job_id,
+        candidateId,
+        emptyToNull(cover_letter),
+        expectedSalaryNum,
+        noticePeriodDaysInt,
+        availableFromDate,
+        finalResumeText
+      ]
+    );
 
     const applicationId = application.rows[0].id;
 
     // Save screening answers
-    if (screening_answers && screening_answers.length > 0) {
+    if (Array.isArray(screening_answers) && screening_answers.length > 0) {
       for (const answer of screening_answers) {
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO screening_answers (application_id, question_id, answer)
           VALUES ($1, $2, $3)
-        `, [applicationId, answer.question_id, answer.answer]);
+        `,
+          [applicationId, answer.question_id, answer.answer]
+        );
       }
     }
 
     // Log activity
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO application_activities (application_id, activity_type, description)
       VALUES ($1, 'application_submitted', 'Application submitted')
-    `, [applicationId]);
+    `,
+      [applicationId]
+    );
 
-    await client.query('COMMIT');
-    res.status(201).json({ 
+    await client.query("COMMIT");
+    res.status(201).json({
       message: "Application submitted successfully",
       application_id: applicationId
     });
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
+    if (savedResumeAbsPath) await fs.unlink(savedResumeAbsPath).catch(() => {});
     console.error("Submit application error:", error);
-    if (error.code === '23505') {
+
+    if (error?.message?.startsWith("Unsupported resume file type")) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    if (error.code === "23505") {
       return res.status(400).json({ error: "You have already applied for this position" });
     }
+
     res.status(500).json({ error: "Failed to submit application" });
   } finally {
     client.release();
@@ -326,7 +574,7 @@ export const getApplicationsByJob = async (req, res) => {
     let query = `
       SELECT ja.*, c.email, c.first_name, c.last_name, c.phone,
              c.current_company, c.current_title, c.experience_years,
-             c.linkedin_url, c.resume_path
+             c.linkedin_url, c.resume_path, c.resume_filename
       FROM job_applications ja
       JOIN candidates c ON ja.candidate_id = c.id
       WHERE ja.job_id = $1
@@ -354,7 +602,9 @@ export const getApplicationDetails = async (req, res) => {
   try {
     const application = await pool.query(`
       SELECT ja.*, c.*, jp.title as job_title, jp.department_id,
-             d.name as department_name
+             d.name as department_name,
+             ja.id as application_id,
+             ja.id as id
       FROM job_applications ja
       JOIN candidates c ON ja.candidate_id = c.id
       JOIN job_postings jp ON ja.job_id = jp.id
@@ -403,6 +653,53 @@ export const getApplicationDetails = async (req, res) => {
   } catch (error) {
     console.error("Get application details error:", error);
     res.status(500).json({ error: "Failed to fetch application details" });
+  }
+};
+
+// Download application resume (admin/HR)
+export const downloadApplicationResume = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `
+      SELECT c.resume_path, c.resume_filename
+      FROM job_applications ja
+      JOIN candidates c ON ja.candidate_id = c.id
+      WHERE ja.id = $1
+    `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    const { resume_path, resume_filename } = result.rows[0];
+    if (!resume_path) {
+      return res.status(404).json({ error: "Resume not found" });
+    }
+
+    const baseName = path.basename(resume_path);
+    const absPath = path.join(RESUMES_DIR, baseName);
+    const resolvedBase = path.resolve(RESUMES_DIR) + path.sep;
+    const resolvedFile = path.resolve(absPath);
+
+    if (!resolvedFile.startsWith(resolvedBase)) {
+      return res.status(400).json({ error: "Invalid resume path" });
+    }
+
+    await fs.access(resolvedFile);
+
+    const rawName = resume_filename || baseName;
+    const safeName = String(rawName).replace(/"/g, "");
+    const ext = path.extname(resolvedFile).toLowerCase();
+    const disposition = ext === ".pdf" || ext === ".txt" ? "inline" : "attachment";
+
+    res.setHeader("Content-Disposition", `${disposition}; filename="${safeName}"`);
+    return res.sendFile(resolvedFile);
+  } catch (error) {
+    console.error("Download resume error:", error);
+    return res.status(500).json({ error: "Failed to download resume" });
   }
 };
 
@@ -699,15 +996,20 @@ export const getDashboardStats = async (req, res) => {
 /**
  * Analyze resume against job requirements using Gemini AI
  */
-export const analyzeResumeJobMatch = async (req, res) => {
+export const analyzerResumeJobMatch = async (req, res) => {
   const { applicationId, jobId, resumeText } = req.body;
+  console.log("🚀 Resume analysis API called");
 
   if (!applicationId || !jobId || !resumeText) {
-    return res.status(400).json({ error: "Missing required fields: applicationId, jobId, resumeText" });
+    return res.status(400).json({
+      error: "Missing required fields: applicationId, jobId, resumeText"
+    });
   }
 
   try {
-    // Get job details
+
+    
+    // 🔹 Fetch job details
     const jobResult = await pool.query(`
       SELECT jp.*, d.name as department_name
       FROM job_postings jp
@@ -721,10 +1023,16 @@ export const analyzeResumeJobMatch = async (req, res) => {
 
     const jobData = jobResult.rows[0];
 
-    // Initialize Gemini AI
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // 🔥 Initialize NEW Gemini SDK
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY
+    });
+   
 
+
+    console.log("✅ AI initialized");
+
+    // 🔥 Prompt
     const prompt = `You are an expert HR recruiter. Analyze the following resume against the job requirements and provide a detailed match analysis.
 
 JOB DETAILS:
@@ -740,48 +1048,48 @@ Job Type: ${jobData.job_type}
 RESUME:
 ${resumeText}
 
-Please analyze and provide:
-1. Overall Match Score (0-100)
-2. Skill Match Analysis (which required skills does the candidate have)
-3. Missing Skills (required skills the candidate lacks)
-4. Experience Relevance (how relevant is their experience)
-5. Key Strengths for this role
-6. Potential concerns or gaps
-7. Recommendation (Strong Match/Good Match/Fair Match/Poor Match)
-8. Specific suggestions for the candidate to improve fit
+Return ONLY valid JSON (no extra text):
 
-Format your response as a JSON object with these exact keys:
 {
   "overallScore": <number>,
   "skillMatch": {
-    "matched": [<list of matched skills>],
+    "matched": [],
     "percentage": <number>
   },
-  "missingSkills": [<list of missing skills>],
+  "missingSkills": [],
   "experienceRelevance": {
-    "relevantExperience": "<description>",
+    "relevantExperience": "",
     "yearsRelevant": <number>,
-    "alignment": "<High/Medium/Low>"
+    "alignment": ""
   },
-  "strengths": [<list of key strengths>],
-  "concerns": [<list of concerns or gaps>],
-  "recommendation": "<Strong Match/Good Match/Fair Match/Poor Match>",
-  "suggestions": [<list of suggestions>],
-  "summary": "<brief summary of the analysis>"
+  "strengths": [],
+  "concerns": [],
+  "recommendation": "",
+  "suggestions": [],
+  "summary": ""
 }`;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    // 🔥 Call Gemini (NEW SYNTAX)
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt
+    });
+    console.log("🔥 Gemini raw response:", result);
 
-    // Extract JSON from response
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Failed to extract JSON from AI response");
+    const text = result.text;
+
+    // 🔥 Safe JSON parsing
+    let analysis;
+
+    try {
+      analysis = JSON.parse(text);
+    } catch (err) {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("Invalid JSON from AI");
+      analysis = JSON.parse(match[0]);
     }
 
-    const analysis = JSON.parse(jsonMatch[0]);
-
-    // Store analysis in database
+    // 🔹 Store in DB
     const analysisStored = await pool.query(`
       INSERT INTO job_applications (
         id, job_id, applicant_email, status, resume_text, ai_analysis, created_at, updated_at
@@ -799,25 +1107,128 @@ Format your response as a JSON object with these exact keys:
       JSON.stringify(analysis)
     ]);
 
-    res.json({
+    return res.json({
       success: true,
       analysis,
       applicationId,
       stored: analysisStored.rows[0]
     });
+
   } catch (error) {
     console.error("Resume analysis error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       success: false,
       error: error.message || "Failed to analyze resume with AI"
     });
   }
 };
 
+export const analyzeResumeJobMatch = async (req, res) => {
+  const { applicationId, jobId, resumeText } = req.body;
+  console.log("🚀 Resume analysis API called");
+
+  if (!applicationId || !jobId || !resumeText) {
+    return res.status(400).json({
+      error: "Missing required fields: applicationId, jobId, resumeText"
+    });
+  }
+
+  try {
+    const jobResult = await pool.query(`
+      SELECT jp.*, d.name as department_name
+      FROM job_postings jp
+      LEFT JOIN departments d ON jp.department_id = d.id
+      WHERE jp.id = $1
+    `, [jobId]);
+
+    if (jobResult.rows.length === 0) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const jobData = jobResult.rows[0];
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const prompt = `You are an expert HR recruiter. Analyze the following resume against the job requirements and provide a detailed match analysis.
+
+JOB DETAILS:
+Title: ${jobData.title}
+Department: ${jobData.department_name || "N/A"}
+Description: ${jobData.description}
+Requirements: ${jobData.requirements}
+Experience Level: ${jobData.experience_level}
+Experience Range: ${jobData.experience_min}-${jobData.experience_max} years
+Location: ${jobData.location}
+Job Type: ${jobData.job_type}
+
+RESUME:
+${resumeText}
+
+Return ONLY valid JSON (no extra text, no markdown):
+
+{
+  "overallScore": <number 0-100>,
+  "skillMatch": { "matched": [], "percentage": <number> },
+  "missingSkills": [],
+  "experienceRelevance": { "relevantExperience": "", "yearsRelevant": <number>, "alignment": "" },
+  "strengths": [],
+  "concerns": [],
+  "recommendation": "",
+  "suggestions": [],
+  "summary": ""
+}`;
+
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt
+    });
+
+    const text = result.text;
+
+    let analysis;
+    try {
+      analysis = JSON.parse(text);
+    } catch (err) {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("Invalid JSON from AI");
+      analysis = JSON.parse(match[0]);
+    }
+
+    // ✅ FIXED: UPDATE the existing row instead of INSERT with wrong columns
+    const updated = await pool.query(`
+      UPDATE job_applications
+      SET
+        ai_analysis = $1,
+        resume_text = $2,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING id, ai_analysis, status
+    `, [JSON.stringify(analysis), resumeText.substring(0, 5000), applicationId]);
+
+    if (updated.rows.length === 0) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    return res.json({
+      success: true,
+      analysis,
+      applicationId,
+      stored: updated.rows[0]
+    });
+
+  } catch (error) {
+    console.error("Resume analysis error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to analyze resume with AI"
+    });
+  }
+};
 /**
  * Batch analyze multiple resumes for a job
  */
-export const batchAnalyzeResumes = async (req, res) => {
+export const batchesAnalyzeResumes = async (req, res) => {
   const { jobId, applications } = req.body;
 
   if (!jobId || !applications || !Array.isArray(applications)) {
@@ -838,8 +1249,8 @@ export const batchAnalyzeResumes = async (req, res) => {
     }
 
     const jobData = jobResult.rows[0];
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const results = [];
 
@@ -911,6 +1322,109 @@ Return only a JSON object with: overallScore (0-100), recommendation (Strong/Goo
   }
 };
 
+export const batchAnalyzeResumes = async (req, res) => {
+  const { jobId, applications } = req.body;
+
+  if (!jobId || !applications || !Array.isArray(applications)) {
+    return res.status(400).json({ error: "Missing required fields: jobId, applications (array)" });
+  }
+
+  try {
+    const jobResult = await pool.query(`
+      SELECT jp.*, d.name as department_name
+      FROM job_postings jp
+      LEFT JOIN departments d ON jp.department_id = d.id
+      WHERE jp.id = $1
+    `, [jobId]);
+
+    if (jobResult.rows.length === 0) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const jobData = jobResult.rows[0];
+
+    // ✅ FIXED: use new GoogleGenAI SDK (same as analyzeResumeJobMatch)
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const results = [];
+
+    for (const app of applications) {
+      try {
+        const prompt = `You are an expert HR recruiter. Analyze the following resume against the job requirements.
+
+JOB DETAILS:
+Title: ${jobData.title}
+Department: ${jobData.department_name || "N/A"}
+Requirements: ${jobData.requirements}
+Experience Level: ${jobData.experience_level}
+Experience Range: ${jobData.experience_min}-${jobData.experience_max} years
+
+RESUME:
+${app.resumeText}
+
+Return ONLY valid JSON (no extra text, no markdown):
+{ "overallScore": <number 0-100>, "recommendation": "<Strong|Good|Fair|Poor Match>", "summary": "<brief text>", "missingSkills": [] }`;
+
+        const result = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt
+        });
+
+        const responseText = result.text;
+        let analysis;
+        try {
+          analysis = JSON.parse(responseText);
+        } catch {
+          const match = responseText.match(/\{[\s\S]*\}/);
+          if (!match) throw new Error("Invalid JSON from AI");
+          analysis = JSON.parse(match[0]);
+        }
+
+        results.push({
+          applicationId: app.applicationId,
+          success: true,
+          score: analysis.overallScore,
+          recommendation: analysis.recommendation,
+          summary: analysis.summary
+        });
+
+        await pool.query(`
+          UPDATE job_applications
+          SET ai_analysis = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $2
+        `, [JSON.stringify(analysis), app.applicationId]);
+
+      } catch (error) {
+        results.push({
+          applicationId: app.applicationId,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    const ranked = results
+      .filter(r => r.success)
+      .sort((a, b) => b.score - a.score)
+      .map((r, idx) => ({ ...r, rank: idx + 1 }));
+
+    res.json({
+      success: true,
+      totalAnalyzed: results.length,
+      successCount: ranked.length,
+      ranked,
+      all: results
+    });
+
+  } catch (error) {
+    console.error("Batch analysis error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to batch analyze resumes"
+    });
+  }
+};
+
 /**
  * Get AI analysis for an application
  */
@@ -929,14 +1443,158 @@ export const getApplicationAnalysis = async (req, res) => {
     }
 
     const app = result.rows[0];
+
+    let analysis = null;
+    if (app.ai_analysis) {
+      if (typeof app.ai_analysis === "string") {
+        try {
+          analysis = JSON.parse(app.ai_analysis);
+        } catch {
+          analysis = null;
+        }
+      } else {
+        analysis = app.ai_analysis;
+      }
+    }
+
+    const aiAnalysisRaw =
+      app.ai_analysis == null
+        ? null
+        : typeof app.ai_analysis === "string"
+          ? app.ai_analysis
+          : JSON.stringify(app.ai_analysis);
+
     res.json({
       applicationId: app.id,
-      analysis: app.ai_analysis ? JSON.parse(app.ai_analysis) : null,
+      analysis,
+      ai_analysis_raw: aiAnalysisRaw,
       status: app.status,
       resumeLength: app.resume_text?.length || 0
     });
   } catch (error) {
     console.error("Get analysis error:", error);
     res.status(500).json({ error: "Failed to fetch analysis" });
+  }
+};
+
+
+
+// =====================================================
+// GOOGLE FORM INTEGRATION
+// =====================================================
+
+export const generateGoogleForm = async (req, res) => {
+  const { jobId } = req.params;
+  try {
+    const job = await pool.query(`SELECT * FROM job_postings WHERE id = $1`, [jobId]);
+    if (job.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+
+    // Placeholder: integrate with Google Forms API here
+    // For now, return a mock form link so the route doesn't crash
+    const mockFormUrl = `https://forms.google.com/placeholder-for-job-${jobId}`;
+
+    await pool.query(`
+      UPDATE job_postings SET updated_at = CURRENT_TIMESTAMP WHERE id = $1
+    `, [jobId]);
+
+    res.json({
+      success: true,
+      jobId,
+      formUrl: mockFormUrl,
+      message: "Google Form generation — connect your Google Forms API credentials to activate"
+    });
+  } catch (error) {
+    console.error("Generate form error:", error);
+    res.status(500).json({ error: "Failed to generate form" });
+  }
+};
+
+export const getFormLink = async (req, res) => {
+  const { jobId } = req.params;
+  try {
+    const job = await pool.query(
+      `SELECT id, title FROM job_postings WHERE id = $1 AND status = 'published'`,
+      [jobId]
+    );
+    if (job.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+
+    // Return whatever form URL you've stored, or a placeholder
+    res.json({
+      jobId,
+      jobTitle: job.rows[0].title,
+      formUrl: `https://forms.google.com/placeholder-for-job-${jobId}`
+    });
+  } catch (error) {
+    console.error("Get form link error:", error);
+    res.status(500).json({ error: "Failed to get form link" });
+  }
+};
+
+// =====================================================
+// RANKED CANDIDATES
+// =====================================================
+
+export const getRankedApplications = async (req, res) => {
+  const { jobId } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT ja.id, ja.status, ja.applied_at,
+             ja.ai_analysis,
+             c.first_name, c.last_name, c.email,
+             c.current_company, c.current_title, c.experience_years
+      FROM job_applications ja
+      JOIN candidates c ON ja.candidate_id = c.id
+      WHERE ja.job_id = $1
+        AND ja.ai_analysis IS NOT NULL
+      ORDER BY (ja.ai_analysis->>'overallScore')::numeric DESC NULLS LAST
+    `, [jobId]);
+
+    const ranked = result.rows.map((row, idx) => ({
+      rank: idx + 1,
+      applicationId: row.id,
+      candidate: {
+        name: `${row.first_name} ${row.last_name}`,
+        email: row.email,
+        currentCompany: row.current_company,
+        currentTitle: row.current_title,
+        experienceYears: row.experience_years
+      },
+      score: row.ai_analysis?.overallScore ?? null,
+      recommendation: row.ai_analysis?.recommendation ?? null,
+      summary: row.ai_analysis?.summary ?? null,
+      status: row.status,
+      appliedAt: row.applied_at
+    }));
+
+    res.json({ jobId, totalRanked: ranked.length, ranked });
+  } catch (error) {
+    console.error("Get ranked applications error:", error);
+    res.status(500).json({ error: "Failed to fetch ranked applications" });
+  }
+};
+
+export const autoAnalyzeAllResumes = async (req, res) => {
+  const { jobId } = req.params;
+  try {
+    // Fetch all applications for this job that have resume_text but no ai_analysis yet
+    const apps = await pool.query(`
+      SELECT ja.id as "applicationId", ja.resume_text as "resumeText"
+      FROM job_applications ja
+      WHERE ja.job_id = $1
+        AND ja.resume_text IS NOT NULL
+        AND ja.ai_analysis IS NULL
+    `, [jobId]);
+
+    if (apps.rows.length === 0) {
+      return res.json({ success: true, message: "No unanalyzed applications found", analyzed: 0 });
+    }
+
+    // Reuse the batch analyze logic by calling it internally
+    req.body = { jobId, applications: apps.rows };
+    return batchAnalyzeResumes(req, res);
+
+  } catch (error) {
+    console.error("Auto-analyze error:", error);
+    res.status(500).json({ error: "Failed to auto-analyze resumes" });
   }
 };

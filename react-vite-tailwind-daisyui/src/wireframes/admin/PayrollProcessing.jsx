@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { 
   FiDollarSign, FiPlus, FiPlay, FiCheck, FiCalendar, 
   FiUsers, FiFileText, FiDownload, FiEye 
@@ -28,7 +27,6 @@ export default function PayrollProcessing() {
   });
 
   const token = localStorage.getItem("token");
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPeriods();
@@ -116,11 +114,6 @@ export default function PayrollProcessing() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
-
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -164,29 +157,8 @@ export default function PayrollProcessing() {
   }
 
   return (
-    <div>
-      {/* Navbar */}
-      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50">
-        <div className="navbar-start">
-          <button className="btn btn-ghost text-xl font-bold text-green-600">
-            <FiDollarSign className="mr-2" /> Payroll Processing
-          </button>
-        </div>
-        <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1 gap-2">
-            <li><button onClick={() => navigate('/admin')} className="btn btn-ghost btn-sm">Users</button></li>
-            <li><button onClick={() => navigate('/admin/payroll')} className="btn btn-ghost btn-sm">Salaries</button></li>
-            <li><button onClick={() => navigate('/admin/payroll/process')} className="btn btn-ghost btn-sm btn-active">Run Payroll</button></li>
-          </ul>
-        </div>
-        <div className="navbar-end">
-          <button onClick={handleLogout} className="btn btn-sm btn-error text-white">Logout</button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="pt-20 p-6 bg-gray-50 min-h-screen">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Periods List */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow p-4">
@@ -351,7 +323,6 @@ export default function PayrollProcessing() {
             )}
           </div>
         </div>
-      </div>
 
       {/* Create Period Modal */}
       {showCreateModal && (

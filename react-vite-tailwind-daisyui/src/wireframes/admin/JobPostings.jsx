@@ -14,7 +14,7 @@ export default function JobPostings() {
   const [departments, setDepartments] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ status: '', department: '' });
+  const [filter, setFilter] = useState({ status: '', department_id: '' });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
@@ -56,21 +56,19 @@ export default function JobPostings() {
           headers: { Authorization: token }
         }),
         axios.get("http://localhost:5001/api/departments"),
-        axios.get(`${API_BASE}/dashboard`, { headers: { Authorization: token } })
+        axios.get(`${API_BASE}/dashboard`, {
+          headers: { Authorization: token }
+        })
       ]);
       setJobs(jobsRes.data);
       setDepartments(deptRes.data);
       setStats(statsRes.data);
     } catch (error) {
       console.error("Fetch error:", error);
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
   };
 
   const openCreateModal = (job = null) => {
@@ -136,7 +134,7 @@ export default function JobPostings() {
       closed: 'badge-ghost',
       filled: 'badge-primary'
     };
-    return <span className={`badge ${badges[status]}`}>{status}</span>;
+    return <span className={`badge ${badges[status] || 'badge-ghost'}`}>{status}</span>;
   };
 
   const getJobTypeBadge = (type) => {
@@ -156,28 +154,8 @@ export default function JobPostings() {
   }
 
   return (
-    <div>
-      {/* Navbar */}
-      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50">
-        <div className="navbar-start">
-          <button className="btn btn-ghost text-xl font-bold text-indigo-600">
-            <FiBriefcase className="mr-2" /> Recruitment
-          </button>
-        </div>
-        <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1 gap-2">
-            <li><button onClick={() => navigate('/admin')} className="btn btn-ghost btn-sm">Dashboard</button></li>
-            <li><button onClick={() => navigate('/admin/recruitment')} className="btn btn-ghost btn-sm btn-active">Jobs</button></li>
-            <li><button onClick={() => navigate('/admin/recruitment/applications')} className="btn btn-ghost btn-sm">Applications</button></li>
-          </ul>
-        </div>
-        <div className="navbar-end">
-          <button onClick={handleLogout} className="btn btn-sm btn-error text-white">Logout</button>
-        </div>
-      </div>
+    <div className="p-6 bg-gray-50 min-h-screen">
 
-      {/* Main Content */}
-      <div className="pt-20 p-6 bg-gray-50 min-h-screen">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <div className="stat bg-white rounded-xl shadow p-4">
@@ -222,8 +200,8 @@ export default function JobPostings() {
             </select>
             <select
               className="select select-bordered select-sm"
-              value={filter.department}
-              onChange={(e) => setFilter({ ...filter, department: e.target.value })}
+              value={filter.department_id}
+              onChange={(e) => setFilter({ ...filter, department_id: e.target.value })}
             >
               <option value="">All Departments</option>
               {departments.map((d) => (
@@ -296,6 +274,7 @@ export default function JobPostings() {
               </div>
             </div>
           ))}
+
           {jobs.length === 0 && (
             <div className="bg-white rounded-xl shadow p-12 text-center">
               <FiBriefcase size={48} className="mx-auto text-gray-300 mb-4" />
@@ -307,7 +286,6 @@ export default function JobPostings() {
             </div>
           )}
         </div>
-      </div>
 
       {/* Create/Edit Modal */}
       {showCreateModal && (
@@ -318,6 +296,7 @@ export default function JobPostings() {
             </h3>
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4">
+
                 <div className="form-control col-span-2">
                   <label className="label"><span className="label-text">Job Title *</span></label>
                   <input
@@ -446,7 +425,7 @@ export default function JobPostings() {
                 </div>
 
                 <div className="form-control">
-                  <label className="label"><span className="label-text">Positions</span></label>
+                  <label className="label"><span className="label-text">Positions Available</span></label>
                   <input
                     type="number"
                     className="input input-bordered"
@@ -489,10 +468,13 @@ export default function JobPostings() {
                     <span className="label-text">Featured Job</span>
                   </label>
                 </div>
+
               </div>
 
               <div className="modal-action">
-                <button type="button" className="btn" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                <button type="button" className="btn" onClick={() => setShowCreateModal(false)}>
+                  Cancel
+                </button>
                 <button type="submit" className="btn btn-primary">
                   {editingJob ? 'Update Job' : 'Create Job'}
                 </button>

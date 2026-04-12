@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Disable DaisyUI default "button-pop" and input animations (prevents pop on refresh) */
+:root {
+  --animation-btn: 0s;
+  --animation-input: 0s;
+}
+
 body{
     background-color: #eff6ff;
 }

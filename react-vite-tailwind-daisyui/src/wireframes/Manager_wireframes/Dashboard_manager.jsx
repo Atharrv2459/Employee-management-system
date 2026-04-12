@@ -7,6 +7,8 @@ import {
   FiUser, FiBarChart2, FiCheckSquare, FiClock,
   FiChevronRight, FiAlertTriangle, FiCalendar, FiArrowRight
 } from 'react-icons/fi';
+import OfficePresencePanel from "../../hooks/OfficePresencePanel";
+import ShiftDetailsPanel from "../../hooks/ShiftDetailsPanel";
 
 export default function ManagerDashboard() {
   const [myTeam, setMyTeam] = useState([]);
@@ -134,6 +136,16 @@ export default function ManagerDashboard() {
           <StatCard icon={<FiCheckSquare size={24} className="text-green-500" />} title="Present Today" value={presentCount} color="bg-green-100" />
           <StatCard icon={<FiCalendar size={24} className="text-yellow-500" />} title="On Leave" value={onLeaveCount} color="bg-yellow-100" />
           <StatCard icon={<FiAlertTriangle size={24} className="text-red-500" />} title="Pending Approvals" value={pendingLeaves.length + pendingApprovals.length} color="bg-red-100" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">My Office Location</h2>
+            <p className="text-sm text-gray-500 mb-4">Select your office and verify whether you are currently inside its geofence.</p>
+            <OfficePresencePanel />
+          </div>
+
+          <ShiftDetailsPanel />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

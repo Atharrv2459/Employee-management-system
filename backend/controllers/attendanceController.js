@@ -39,10 +39,12 @@ export const punchIn = async (req, res) => {
       // Record location data if geolocation was captured
       let locationRecord = null;
       if (geolocationResult && !geolocationResult.validationSkipped) {
+        const attendanceId = attendance.id || attendance.attendance_id;
         locationRecord = await recordAttendanceLocation(
-          attendance.id,
+          attendanceId,
           "punch_in",
-          geolocationResult
+          geolocationResult,
+          client
         );
       }
 
@@ -122,10 +124,12 @@ export const punchOut = async (req, res) => {
       // Record location data for punch out
       let locationRecord = null;
       if (geolocationResult && !geolocationResult.validationSkipped) {
+        const attendanceId = attendance.id || attendance.attendance_id;
         locationRecord = await recordAttendanceLocation(
-          attendance.id,
+          attendanceId,
           "punch_out",
-          geolocationResult
+          geolocationResult,
+          client
         );
       }
 
@@ -182,6 +186,83 @@ export const getMyAttendance = async (req, res) => {
     res.status(200).json({ data: result.rows });
   } catch (err) {
     console.error("Get attendance error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ ADMIN: Get any user's attendance with punch in/out locations
+export const getUserAttendanceAdmin = async (req, res) => {
+  const { userId } = req.params;
+  const { start_date, end_date } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
+  }
+
+  try {
+    const params = [userId];
+    let where = `a.user_id = $1`;
+
+    if (start_date) {
+      params.push(start_date);
+      where += ` AND a.punch_in::date >= $${params.length}`;
+    }
+
+    if (end_date) {
+      params.push(end_date);
+      where += ` AND a.punch_in::date <= $${params.length}`;
+    }
+
+    const result = await pool.query(
+      `SELECT a.*, u.email,
+              COALESCE(e.first_name, m.first_name) AS first_name,
+              COALESCE(e.last_name, m.last_name) AS last_name,
+
+              al_in.office_name as punch_in_office,
+              al_in.latitude as punch_in_lat,
+              al_in.longitude as punch_in_lng,
+              al_in.accuracy as punch_in_accuracy,
+              al_in.is_within_geofence as punch_in_valid,
+              al_in.distance_from_office as punch_in_distance,
+              al_in.captured_at as punch_in_captured_at,
+
+              al_out.office_name as punch_out_office,
+              al_out.latitude as punch_out_lat,
+              al_out.longitude as punch_out_lng,
+              al_out.accuracy as punch_out_accuracy,
+              al_out.is_within_geofence as punch_out_valid,
+              al_out.distance_from_office as punch_out_distance,
+              al_out.captured_at as punch_out_captured_at
+       FROM attendance a
+       JOIN users u ON a.user_id = u.user_id
+       LEFT JOIN employees e ON a.user_id = e.user_id
+       LEFT JOIN managers m ON a.user_id = m.user_id
+       LEFT JOIN LATERAL (
+         SELECT al.latitude, al.longitude, al.accuracy, al.is_within_geofence, al.distance_from_office, al.captured_at,
+                ol.name as office_name
+         FROM attendance_locations al
+         LEFT JOIN office_locations ol ON al.office_location_id = ol.id
+         WHERE al.attendance_id = a.id AND al.location_type = 'punch_in'
+         ORDER BY al.captured_at DESC
+         LIMIT 1
+       ) al_in ON true
+       LEFT JOIN LATERAL (
+         SELECT al.latitude, al.longitude, al.accuracy, al.is_within_geofence, al.distance_from_office, al.captured_at,
+                ol.name as office_name
+         FROM attendance_locations al
+         LEFT JOIN office_locations ol ON al.office_location_id = ol.id
+         WHERE al.attendance_id = a.id AND al.location_type = 'punch_out'
+         ORDER BY al.captured_at DESC
+         LIMIT 1
+       ) al_out ON true
+       WHERE ${where}
+       ORDER BY a.punch_in DESC`,
+      params
+    );
+
+    res.status(200).json({ data: result.rows });
+  } catch (err) {
+    console.error("Admin get attendance error:", err);
     res.status(500).json({ error: err.message });
   }
 };

@@ -293,8 +293,18 @@ export const assignShift = async (req, res) => {
     );
 
     if (!availCheck.rows[0].available) {
-      return res.status(400).json({ error: "Employee is not available on this date" });
+      return res.status(400).json({
+        error: "Employee is not available on this date (unavailable day/date or approved leave)",
+      });
     }
+
+    // If we are updating an existing shift for the same user/date,
+    // exclude that row from conflict check so it doesn't conflict with itself.
+    const existingSchedule = await pool.query(
+      `SELECT id FROM shift_schedule WHERE user_id = $1 AND schedule_date = $2 AND status != 'cancelled' LIMIT 1`,
+      [user_id, schedule_date]
+    );
+    const excludeScheduleId = existingSchedule.rows[0]?.id || null;
 
     // Check for conflicts
     if (shift_template_id) {
@@ -302,13 +312,17 @@ export const assignShift = async (req, res) => {
         `SELECT start_time, end_time FROM shift_templates WHERE id = $1`,
         [shift_template_id]
       );
-      
+
       if (template.rows.length > 0) {
         const conflictCheck = await pool.query(
-          `SELECT check_shift_conflict($1, $2, $3, $4) as has_conflict`,
-          [user_id, schedule_date, 
-           start_time || template.rows[0].start_time, 
-           end_time || template.rows[0].end_time]
+          `SELECT check_shift_conflict($1, $2, $3, $4, $5) as has_conflict`,
+          [
+            user_id,
+            schedule_date,
+            start_time || template.rows[0].start_time,
+            end_time || template.rows[0].end_time,
+            excludeScheduleId,
+          ]
         );
 
         if (conflictCheck.rows[0].has_conflict) {

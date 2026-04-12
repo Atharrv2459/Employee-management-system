@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -20,7 +19,6 @@ export default function AdminDashboard() {
   });
 
   const token = localStorage.getItem("token");
-  const navigate = useNavigate();
 
 
   // =======================
@@ -46,14 +44,6 @@ const handleDeleteUser = async (userId) => {
     toast.error(err.response?.data?.message || "Failed to delete user");
   }
 };
-
-  // =======================
-  // Logout
-  // =======================
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
 
   // =======================
   // Fetch Users
@@ -152,41 +142,7 @@ const handleDeleteUser = async (userId) => {
 
   return (
     <div>
-      {/* =======================
-          Navbar (LIKE MANAGER)
-      ======================= */}
-      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50">
-        <div className="navbar-start">
-          <button className="btn btn-ghost text-xl font-bold text-purple-600">
-            Admin Panel
-          </button>
-        </div>
-
-        <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1 gap-2">
-            <li><button onClick={() => navigate('/admin')} className="btn btn-ghost btn-sm">Users</button></li>
-            <li><button onClick={() => navigate('/admin/departments')} className="btn btn-ghost btn-sm">Departments</button></li>
-            <li><button onClick={() => navigate('/admin/locations')} className="btn btn-ghost btn-sm">Locations</button></li>
-            <li><button onClick={() => navigate('/admin/shift-calendar')} className="btn btn-ghost btn-sm">Shifts</button></li>
-            <li><button onClick={() => navigate('/admin/payroll')} className="btn btn-ghost btn-sm">Payroll</button></li>
-            <li><button onClick={() => navigate('/admin/recruitment')} className="btn btn-ghost btn-sm">Recruitment</button></li>
-          </ul>
-        </div>
-
-        <div className="navbar-end gap-4">
-          <button
-            onClick={handleLogout}
-            className="btn btn-sm btn-error text-white"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* =======================
-          Page Content
-      ======================= */}
-      <div className="pt-20 p-8 max-w-7xl mx-auto">
+      <div className="p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>

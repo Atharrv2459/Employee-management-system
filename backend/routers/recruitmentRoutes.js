@@ -1,16 +1,22 @@
 import express from "express";
+import multer from "multer";
 import * as recruitmentController from "../controllers/recruitmentController.js";
 import { verifyToken } from "../middleware/auth.js";
 import isAdmin from "../middleware/adminCheck.js";
 
 const router = express.Router();
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
 // =====================================================
 // PUBLIC ROUTES (Careers Page)
 // =====================================================
 router.get("/careers", recruitmentController.getPublishedJobs);
 router.get("/careers/:slug", recruitmentController.getJobBySlug);
-router.post("/apply", recruitmentController.submitApplication);
+router.post("/apply", upload.single("resume"), recruitmentController.submitApplication);
 
 // =====================================================
 // JOB POSTINGS (Admin/HR)
@@ -25,6 +31,7 @@ router.put("/jobs/:id", verifyToken, isAdmin, recruitmentController.updateJob);
 router.get("/jobs/:jobId/applications", verifyToken, recruitmentController.getApplicationsByJob);
 router.get("/applications/:id", verifyToken, recruitmentController.getApplicationDetails);
 router.put("/applications/:id/status", verifyToken, recruitmentController.updateApplicationStatus);
+router.get("/applications/:id/resume", verifyToken, isAdmin, recruitmentController.downloadApplicationResume);
 
 // =====================================================
 // RESUME ANALYSIS WITH AI
@@ -34,18 +41,16 @@ router.post("/resume-analysis/batch", verifyToken, isAdmin, recruitmentControlle
 router.get("/resume-analysis/:applicationId", verifyToken, recruitmentController.getApplicationAnalysis);
 
 // =====================================================
-// INTERVIEWS
+// GOOGLE FORM INTEGRATION
 // =====================================================
-router.get("/interviews/my", verifyToken, recruitmentController.getMyInterviews);
-router.post("/interviews", verifyToken, recruitmentController.scheduleInterview);
-router.post("/interviews/:interviewId/feedback", verifyToken, recruitmentController.submitFeedback);
-router.get("/stages", recruitmentController.getInterviewStages);
+router.post("/jobs/:jobId/generate-form", verifyToken, isAdmin, recruitmentController.generateGoogleForm);
+router.get("/jobs/:jobId/form-link", recruitmentController.getFormLink);
 
 // =====================================================
-// OFFER LETTERS
+// RANKED CANDIDATES
 // =====================================================
-router.post("/offers", verifyToken, isAdmin, recruitmentController.createOffer);
-router.put("/offers/:id/status", verifyToken, recruitmentController.updateOfferStatus);
+router.get("/jobs/:jobId/ranked-applications", verifyToken, recruitmentController.getRankedApplications);
+router.post("/jobs/:jobId/auto-analyze", verifyToken, isAdmin, recruitmentController.autoAnalyzeAllResumes);
 
 // =====================================================
 // DASHBOARD

@@ -3,15 +3,8 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 
-import L from "leaflet";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import OfficeMap from "./OfficeMap";
-
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+import OfficePresencePanel from "../../hooks/OfficePresencePanel";
+import ShiftDetailsPanel from "../../hooks/ShiftDetailsPanel";
 
 
 
@@ -384,6 +377,8 @@ fetchTeamStatus();
           </div>
 
         
+          <ShiftDetailsPanel />
+
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -488,7 +483,7 @@ fetchTeamStatus();
       <h3 className="text-xl font-bold text-gray-800">Office Location</h3>
     </div>
 
-    <OfficeMap />
+    <OfficePresencePanel showMap />
   </div>
 </div>
 

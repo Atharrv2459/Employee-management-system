@@ -1,2 +1,25 @@
-*.env
-*.md
+# Create .gitignore with common ignores
+cat > .gitignore << EOF
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vite
+.vite/
+EOF

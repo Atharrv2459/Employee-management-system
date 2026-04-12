@@ -18,6 +18,7 @@ import locationRouter from './routers/locationRoutes.js'
 import shiftScheduleRouter from './routers/shiftScheduleRoutes.js'
 import payrollRouter from './routers/payrollRoutes.js'
 import recruitmentRouter from './routers/recruitmentRoutes.js'
+import { GoogleGenAI } from "@google/genai";
 
 import pool from "./db.js";
 const app = express();
@@ -30,6 +31,8 @@ const PORT = process.env.PORT || 5001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
 
 app.use('/api',roleRouter);
 app.use('/api/users', userRouter);

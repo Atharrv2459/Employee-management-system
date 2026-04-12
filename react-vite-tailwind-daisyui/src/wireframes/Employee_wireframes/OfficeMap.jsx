@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 function RecenterMap({ position }) {
   const map = useMap();
@@ -13,11 +21,20 @@ function RecenterMap({ position }) {
   return null;
 }
 
-export default function OfficeMap() {
-  const [position, setPosition] = useState(null);
+export default function OfficeMap({ position: positionProp = null }) {
+  const [position, setPosition] = useState(positionProp);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (positionProp) {
+      setPosition(positionProp);
+      setError(null);
+    }
+  }, [positionProp]);
+
+  useEffect(() => {
+    if (positionProp) return;
+
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       return;
@@ -38,7 +55,7 @@ export default function OfficeMap() {
         maximumAge: 0,
       }
     );
-  }, []);
+  }, [positionProp]);
 
   return (
     <div className="w-full h-80 rounded-xl overflow-hidden border">

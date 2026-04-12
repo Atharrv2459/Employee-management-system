@@ -216,12 +216,12 @@ export const validateGeolocation = async (req, res, next) => {
 /**
  * Record attendance location in database
  */
-export const recordAttendanceLocation = async (attendanceId, locationType, geolocationResult) => {
+export const recordAttendanceLocation = async (attendanceId, locationType, geolocationResult, db = pool) => {
   if (!geolocationResult || geolocationResult.validationSkipped) {
     return null;
   }
 
-  const result = await pool.query(
+  const result = await db.query(
     `INSERT INTO attendance_locations 
      (attendance_id, location_type, latitude, longitude, accuracy, 
       office_location_id, is_within_geofence, distance_from_office, captured_at)

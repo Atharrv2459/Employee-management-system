@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { FiDollarSign, FiPlus, FiEdit2, FiUsers, FiTrendingUp, FiPercent } from "react-icons/fi";
 
 const API_BASE = "http://localhost:5001/api/payroll";
@@ -43,7 +42,6 @@ export default function SalaryManagement() {
   });
 
   const token = localStorage.getItem("token");
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -67,11 +65,6 @@ export default function SalaryManagement() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
   };
 
   const openAssignModal = (emp = null) => {
@@ -185,30 +178,8 @@ export default function SalaryManagement() {
   }
 
   return (
-    <div>
-      {/* Navbar */}
-      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50">
-        <div className="navbar-start">
-          <button className="btn btn-ghost text-xl font-bold text-green-600">
-            <FiDollarSign className="mr-2" /> Payroll Management
-          </button>
-        </div>
-        <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1 gap-2">
-            <li><button onClick={() => navigate('/admin')} className="btn btn-ghost btn-sm">Users</button></li>
-            <li><button onClick={() => navigate('/admin/departments')} className="btn btn-ghost btn-sm">Departments</button></li>
-            <li><button onClick={() => navigate('/admin/payroll')} className="btn btn-ghost btn-sm btn-active">Payroll</button></li>
-            <li><button onClick={() => navigate('/admin/payroll/process')} className="btn btn-ghost btn-sm">Run Payroll</button></li>
-          </ul>
-        </div>
-        <div className="navbar-end">
-          <button onClick={handleLogout} className="btn btn-sm btn-error text-white">Logout</button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="pt-20 p-6 bg-gray-50 min-h-screen">
-        {/* Stats */}
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="stat bg-white rounded-xl shadow">
             <div className="stat-figure text-primary"><FiUsers size={24} /></div>
@@ -386,7 +357,6 @@ export default function SalaryManagement() {
             </div>
           </div>
         )}
-      </div>
 
       {/* Assign Salary Modal */}
       {showAssignModal && (
