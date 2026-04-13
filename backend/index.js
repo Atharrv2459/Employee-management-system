@@ -20,7 +20,7 @@ import payrollRouter from './routers/payrollRoutes.js'
 import recruitmentRouter from './routers/recruitmentRoutes.js'
 import { GoogleGenAI } from "@google/genai";
 
-import pool from "./db.js";
+import pool, { dbDiagnostics } from "./db.js";
 const app = express();
 dotenv.config();
 
@@ -67,6 +67,15 @@ app.use('/api/recruitment', recruitmentRouter);
 
 
 app.get("/health", (req, res) => {
+  res.json({
+    ok: true,
+    nodeEnv: process.env.NODE_ENV || null,
+    db: dbDiagnostics,
+  });
+});
+
+// Common convention for load balancers / platform health checks
+app.get("/healthz", (req, res) => {
   res.json({ ok: true });
 });
 

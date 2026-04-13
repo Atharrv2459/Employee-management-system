@@ -34,7 +34,7 @@ export default function AdminLayout() {
             onClick={() => navigate("/admin")}
             type="button"
           >
-            Admin Panel
+            HR Panel
           </button>
         </div>
 
