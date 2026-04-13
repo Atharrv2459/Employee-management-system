@@ -54,7 +54,8 @@ const corsOptions = {
 console.log("[cors] allowed origins:", allowedOrigins.length ? allowedOrigins : "(allow all)");
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// Express/router path-to-regexp doesn't accept "*" here; use a match-all regex.
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 
