@@ -155,23 +155,68 @@ export const updateDepartment = async (req, res) => {
     const { id } = req.params;
     const { name, code, description, parent_id, head_user_id, is_active } = req.body;
 
-    // Prevent circular reference
-    if (parent_id === id) {
+    const UUID_RE =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    const normalizeUuid = (v) => {
+      if (v === undefined) return { present: false, value: null };
+      if (v === null || v === "") return { present: true, value: null };
+      const s = String(v).trim();
+      if (!s) return { present: true, value: null };
+      if (!UUID_RE.test(s)) return { present: true, invalid: true };
+      return { present: true, value: s };
+    };
+
+    const parent = normalizeUuid(parent_id);
+    const head = normalizeUuid(head_user_id);
+
+    if (parent.invalid) return res.status(400).json({ error: "Invalid parent_id" });
+    if (head.invalid) return res.status(400).json({ error: "Invalid head_user_id" });
+
+    // Prevent circular reference (only when parent is provided and non-null)
+    if (parent.present && parent.value && parent.value === id) {
       return res.status(400).json({ error: "Department cannot be its own parent" });
     }
 
+    const sets = [];
+    const values = [];
+    let i = 1;
+
+    if (name !== undefined) {
+      sets.push(`name = $${i++}`);
+      values.push(name);
+    }
+    if (code !== undefined) {
+      sets.push(`code = $${i++}`);
+      values.push(code);
+    }
+    if (description !== undefined) {
+      sets.push(`description = $${i++}`);
+      values.push(description);
+    }
+    if (parent.present) {
+      sets.push(`parent_id = $${i++}`);
+      values.push(parent.value);
+    }
+    if (head.present) {
+      sets.push(`head_user_id = $${i++}`);
+      values.push(head.value);
+    }
+    if (is_active !== undefined) {
+      sets.push(`is_active = $${i++}`);
+      values.push(is_active);
+    }
+
+    if (!sets.length) {
+      return res.status(400).json({ error: "No fields provided to update" });
+    }
+
+    sets.push("updated_at = CURRENT_TIMESTAMP");
+
+    values.push(id);
     const result = await pool.query(
-      `UPDATE departments 
-       SET name = COALESCE($1, name),
-           code = COALESCE($2, code),
-           description = COALESCE($3, description),
-           parent_id = $4,
-           head_user_id = $5,
-           is_active = COALESCE($6, is_active),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
-       RETURNING *`,
-      [name, code, description, parent_id, head_user_id, is_active, id]
+      `UPDATE departments SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
+      values
     );
 
     if (result.rows.length === 0) {
