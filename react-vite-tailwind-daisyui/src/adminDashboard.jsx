@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { API_BASE } from "./api";
@@ -19,6 +20,7 @@ export default function AdminDashboard() {
     roll_no: "",
   });
 
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
 
@@ -141,32 +143,109 @@ const handleDeleteUser = async (userId) => {
         .includes(search.toLowerCase())
   );
 
+  const stats = useMemo(() => {
+    const total = users.length;
+    const employees = users.filter((u) => u.role_id === 1).length;
+    const managers = users.filter((u) => u.role_id === 2).length;
+    const hrAdmins = users.filter((u) => u.role_id === 3).length;
+    return { total, employees, managers, hrAdmins };
+  }, [users]);
+
+  const quickLinks = [
+    { title: "Departments", desc: "Structure teams & roles", to: "/admin/departments" },
+    { title: "Locations", desc: "Offices & geofence points", to: "/admin/locations" },
+    { title: "Attendance", desc: "Company attendance overview", to: "/admin/attendance" },
+    { title: "Shifts", desc: "Templates & scheduling", to: "/admin/shift-calendar" },
+    { title: "Payroll", desc: "Salary management & processing", to: "/admin/payroll" },
+    { title: "Recruitment", desc: "Jobs, applications & hiring", to: "/admin/recruitment" },
+  ];
+
   return (
     <div>
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-6 md:p-8 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Admin User Management</h1>
-            <p className="text-gray-500">Create, view and update users</p>
+            <h1 className="text-3xl font-bold">HR Dashboard</h1>
+            <p className="text-gray-500">Quick overview + user management</p>
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowCreateModal(true)}
-          >
-            + Create User
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button className="btn btn-outline" onClick={fetchUsers} type="button">
+              Refresh
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowCreateModal(true)}
+              type="button"
+            >
+              + Create User
+            </button>
+          </div>
+        </div>
+
+        {/* Widgets */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-2xl shadow border p-5">
+            <div className="text-xs uppercase tracking-wider text-gray-400">Total Users</div>
+            <div className="text-3xl font-extrabold mt-2">{stats.total}</div>
+            <div className="text-sm text-gray-500 mt-1">All roles combined</div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow border p-5">
+            <div className="text-xs uppercase tracking-wider text-gray-400">Employees</div>
+            <div className="text-3xl font-extrabold mt-2">{stats.employees}</div>
+            <div className="text-sm text-gray-500 mt-1">Active workforce</div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow border p-5">
+            <div className="text-xs uppercase tracking-wider text-gray-400">Managers</div>
+            <div className="text-3xl font-extrabold mt-2">{stats.managers}</div>
+            <div className="text-sm text-gray-500 mt-1">Approvals & reports</div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow border p-5">
+            <div className="text-xs uppercase tracking-wider text-gray-400">HR/Admin</div>
+            <div className="text-3xl font-extrabold mt-2">{stats.hrAdmins}</div>
+            <div className="text-sm text-gray-500 mt-1">System control</div>
+          </div>
+        </div>
+
+        {/* Feature shortcuts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+          {quickLinks.map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => navigate(item.to)}
+              className="bg-white rounded-2xl shadow border p-5 text-left hover:shadow-lg transition"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{item.icon}</span>
+                    <div className="font-bold text-lg">{item.title}</div>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-2">{item.desc}</div>
+                </div>
+                <div className="btn btn-sm btn-ghost">Open</div>
+              </div>
+            </button>
+          ))}
         </div>
 
         {/* Search */}
-        <div className="mb-4">
+        <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <input
             type="text"
-            placeholder="Search by name or email..."
-            className="input input-bordered w-full max-w-md"
+            placeholder="Search users by name or email..."
+            className="input input-bordered w-full sm:max-w-md"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <div className="text-sm text-gray-500">
+            Showing <span className="font-semibold">{filteredUsers.length}</span> of{" "}
+            <span className="font-semibold">{users.length}</span>
+          </div>
         </div>
 
         {/* Table */}

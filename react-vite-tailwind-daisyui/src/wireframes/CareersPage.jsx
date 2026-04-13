@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FiBriefcase, FiMapPin, FiClock } from "react-icons/fi";
-import { RECRUITMENT_API_BASE as API_BASE } from "../api";
+import { RECRUITMENT_API_BASE as API_BASE, SITE_ORIGIN } from "../api";
 
 const JOB_TYPE_LABEL = {
   full_time: "Full Time",
@@ -187,7 +187,7 @@ export default function CareersPage() {
                       >
                         Apply
                       </button>
-                      <div className="text-xs text-base-content/60">Shareable link: /careers/{job.slug}/apply</div>
+                      <div className="text-xs text-base-content/60">Shareable link: {SITE_ORIGIN}/careers/{job.slug}/apply</div>
                     </div>
                   </div>
                 </div>

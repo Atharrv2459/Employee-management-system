@@ -7,7 +7,7 @@ import {
   FiStar, FiCheck, FiX, FiClock
 } from "react-icons/fi";
 
-import { RECRUITMENT_API_BASE as API_BASE } from "../../api";
+import { RECRUITMENT_API_BASE as API_BASE, SITE_ORIGIN } from "../../api";
 
 const STATUS_COLORS = {
   new: 'badge-warning',
@@ -146,7 +146,7 @@ export default function ApplicationsManagement() {
   };
 
   const publicApplyUrl = job?.slug
-    ? `${window.location.origin}/careers/${job.slug}/apply`
+    ? `${SITE_ORIGIN}/careers/${job.slug}/apply`
     : '';
 
   const handleCopyPublicApplyLink = async () => {
