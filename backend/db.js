@@ -13,7 +13,7 @@ const shouldUseSsl =
 const sslConfig = shouldUseSsl ? { rejectUnauthorized: false } : undefined;
 
 export const dbDiagnostics = (() => {
-  const source = process.env.DB_URL ? "DB_URL" : process.env.DATABASE_URL ? "DATABASE_URL" : null;
+  const connectionString = process.env.DATABASE_URL || process.env.DB_URL;
   const diag = {
     hasConnectionString: Boolean(connectionString && String(connectionString).trim()),
     source,

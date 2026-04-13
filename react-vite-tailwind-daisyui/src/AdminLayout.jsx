@@ -27,10 +27,10 @@ export default function AdminLayout() {
 
   return (
     <div>
-      <div className="navbar bg-white shadow-md px-6 fixed top-0 left-0 w-full z-50 h-16 items-center">
+      <div className="navbar bg-blue-900 shadow-md px-6 fixed top-0 left-0 w-full z-50 h-16 items-center border-b border-blue-800/40">
         <div className="navbar-start">
           <button
-            className="btn btn-ghost btn-sm text-xl font-bold text-purple-600"
+            className="btn btn-ghost btn-sm text-xl font-bold text-white hover:bg-white/10"
             onClick={() => navigate("/admin")}
             type="button"
           >
@@ -42,7 +42,7 @@ export default function AdminLayout() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate("/admin")}
-              className={`btn btn-ghost btn-sm ${usersActive ? "btn-active" : ""}`}
+              className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${usersActive ? "bg-white/15" : ""}`}
               type="button"
             >
               Users
@@ -50,7 +50,7 @@ export default function AdminLayout() {
 
             <button
               onClick={() => navigate("/admin/departments")}
-              className={`btn btn-ghost btn-sm ${deptsActive ? "btn-active" : ""}`}
+              className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${deptsActive ? "bg-white/15" : ""}`}
               type="button"
             >
               Departments
@@ -58,7 +58,7 @@ export default function AdminLayout() {
 
             <button
               onClick={() => navigate("/admin/locations")}
-              className={`btn btn-ghost btn-sm ${locationsActive ? "btn-active" : ""}`}
+              className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${locationsActive ? "bg-white/15" : ""}`}
               type="button"
             >
               Locations
@@ -68,7 +68,7 @@ export default function AdminLayout() {
               <button
                 tabIndex={0}
                 type="button"
-                className={`btn btn-ghost btn-sm ${shiftsActive ? "btn-active" : ""}`}
+                className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${shiftsActive ? "bg-white/15" : ""}`}
               >
                 Shifts
               </button>
@@ -91,7 +91,7 @@ export default function AdminLayout() {
 
             <button
               onClick={() => navigate("/admin/attendance")}
-              className={`btn btn-ghost btn-sm ${attendanceActive ? "btn-active" : ""}`}
+              className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${attendanceActive ? "bg-white/15" : ""}`}
               type="button"
             >
               Attendance
@@ -101,7 +101,7 @@ export default function AdminLayout() {
               <button
                 tabIndex={0}
                 type="button"
-                className={`btn btn-ghost btn-sm ${payrollActive ? "btn-active" : ""}`}
+                className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${payrollActive ? "bg-white/15" : ""}`}
               >
                 Payroll
               </button>
@@ -126,7 +126,7 @@ export default function AdminLayout() {
               <button
                 tabIndex={0}
                 type="button"
-                className={`btn btn-ghost btn-sm ${recruitmentActive ? "btn-active" : ""}`}
+                className={`btn btn-ghost btn-sm text-white hover:bg-white/10 ${recruitmentActive ? "bg-white/15" : ""}`}
               >
                 Recruitment
               </button>
