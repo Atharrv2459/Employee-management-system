@@ -29,18 +29,32 @@ dotenv.config();
 const PORT = process.env.PORT || 5001;
 
 // Middleware
-const corsOrigins = (process.env.CORS_ORIGIN || "")
+const normalizeOrigin = (value) => String(value || "").trim().replace(/\/+$/, "");
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
-  .map((s) => s.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: corsOrigins.length ? corsOrigins : true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // allow non-browser requests (no Origin header)
+    if (!origin) return callback(null, true);
+
+    const normalized = normalizeOrigin(origin);
+    const allowed = !allowedOrigins.length || allowedOrigins.includes(normalized);
+    return callback(null, allowed);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  optionsSuccessStatus: 204,
+  maxAge: 86400,
+};
+
+console.log("[cors] allowed origins:", allowedOrigins.length ? allowedOrigins : "(allow all)");
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
