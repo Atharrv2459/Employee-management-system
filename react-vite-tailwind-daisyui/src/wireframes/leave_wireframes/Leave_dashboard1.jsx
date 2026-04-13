@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "../../api";
 
 export default function LeaveBalanceDashboard() {
   const [leaveBalances, setLeaveBalances] = useState([]);
@@ -20,7 +21,7 @@ export default function LeaveBalanceDashboard() {
 
   const fetchLeaveBalances = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/leaves/balance", {
+      const res = await axios.get(`${API_BASE}/leaves/balance`, {
         headers: { Authorization: token },
       });
       setLeaveBalances(res.data.data || []);

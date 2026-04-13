@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const API_BASE = "http://localhost:5001/api/recruitment";
+import { RECRUITMENT_API_BASE as API_BASE } from "../../api";
 
 const ResumeAnalyzer = ({
   applicationId,
@@ -326,7 +326,7 @@ export const BulkResumeAnalyzer = ({ jobId, applications, onComplete }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5001/api/recruitment/resume-analysis/batch`, {
+      const response = await fetch(`${API_BASE}/resume-analysis/batch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -109,12 +109,27 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
+  const client = await pool.connect();
+
   try {
-    const result = await pool.query(`DELETE FROM users WHERE user_id = $1 RETURNING *`, [id]);
-    if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User deleted successfully' });
+    await client.query("BEGIN");
+
+    // leave_balance FK (in some DB setups) is RESTRICT, so delete child rows first.
+    await client.query(`DELETE FROM leave_balance WHERE user_id = $1`, [id]);
+
+    const result = await client.query(`DELETE FROM users WHERE user_id = $1 RETURNING *`, [id]);
+    if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await client.query("COMMIT");
+    res.json({ message: "User deleted successfully" });
   } catch (err) {
+    await client.query("ROLLBACK");
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 };
 

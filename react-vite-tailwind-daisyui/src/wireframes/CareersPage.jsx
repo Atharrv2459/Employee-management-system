@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FiBriefcase, FiMapPin, FiClock } from "react-icons/fi";
-
-const API_BASE = "http://localhost:5001/api/recruitment";
+import { RECRUITMENT_API_BASE as API_BASE } from "../api";
 
 const JOB_TYPE_LABEL = {
   full_time: "Full Time",

@@ -6,8 +6,7 @@ import {
   FiPhone, FiLinkedin, FiGlobe, FiFileText, FiDollarSign,
   FiCheckCircle
 } from "react-icons/fi";
-
-const API_BASE = "http://localhost:5001/api/recruitment";
+import { RECRUITMENT_API_BASE as API_BASE } from "../api";
 
 export default function CareersApplyPage() {
   const { slug } = useParams();

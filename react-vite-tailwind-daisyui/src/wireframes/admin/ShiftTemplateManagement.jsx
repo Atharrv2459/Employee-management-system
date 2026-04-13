@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { FiPlus, FiEdit2, FiTrash2, FiClock, FiSun, FiMoon, FiSunset } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5001/api";
+import { API_BASE } from "../../api";
 
 const SHIFT_TYPES = [
   { value: 'regular', label: 'Regular', icon: FiClock },

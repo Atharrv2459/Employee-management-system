@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE } from "../../../api";
 
 export default function ShiftPreferenceCard() {
   const [shiftTimes, setShiftTimes] = useState([]);
@@ -13,7 +14,7 @@ export default function ShiftPreferenceCard() {
     const fetchShift = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/shift/get", {
+        const res = await axios.get(`${API_BASE}/shift/get`, {
           headers: { Authorization: token },
         });
 
@@ -46,12 +47,12 @@ export default function ShiftPreferenceCard() {
       };
 
       if (exists) {
-        await axios.put("http://localhost:5001/api/shift/update", payload, {
+        await axios.put(`${API_BASE}/shift/update`, payload, {
           headers: { Authorization: token },
         });
         toast.success("Shift preferences updated");
       } else {
-        await axios.post("http://localhost:5001/api/shift/create", payload, {
+        await axios.post(`${API_BASE}/shift/create`, payload, {
           headers: { Authorization: token },
         });
         toast.success("Shift preferences created");

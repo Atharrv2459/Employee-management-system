@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_BASE } from "../../api";
 import { useNavigate } from 'react-router-dom';
 import { FiMapPin, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { useGeolocation } from '../../useGeolocation';
@@ -65,7 +66,7 @@ const base64UrlToBuffer = (base64url) => {
     setLocationStatus('checking');
     try {
       const res = await axios.post(
-        'http://localhost:5001/api/locations/check-geofence',
+        `${API_BASE}/locations/check-geofence`,
         { latitude: lat, longitude: lng },
         { headers: { Authorization: token } }
       );
@@ -128,7 +129,7 @@ const base64UrlToBuffer = (base64url) => {
 
   const fetchAttendance = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/attendance/get', {
+      const res = await axios.get(`${API_BASE}/attendance/get`, {
         headers: { Authorization: token },
       });
 
@@ -161,7 +162,7 @@ const base64UrlToBuffer = (base64url) => {
       }
 
       const res = await axios.post(
-        "http://localhost:5001/api/attendance/punch-in",
+        `${API_BASE}/attendance/punch-in`,
         {
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
@@ -201,7 +202,7 @@ const base64UrlToBuffer = (base64url) => {
       }
 
       const res = await axios.post(
-        'http://localhost:5001/api/attendance/punch-out',
+        `${API_BASE}/attendance/punch-out`,
         {
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,

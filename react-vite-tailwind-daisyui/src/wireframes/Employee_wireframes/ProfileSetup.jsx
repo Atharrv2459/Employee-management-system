@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE } from "../../api";
 import { useNavigate } from "react-router-dom";
 
 // Importing modular cards
@@ -31,7 +32,7 @@ export default function ProfileSetup() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/employee/get", {
+        const res = await axios.get(`${API_BASE}/employee/get`, {
           headers: { Authorization: token },
         });
 
@@ -58,7 +59,7 @@ export default function ProfileSetup() {
 
     const fetchManagers = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/manager/getAll");
+        const res = await axios.get(`${API_BASE}/manager/getAll`);
         setManagers(res.data.data);
       } catch (error) {
         toast.error("Failed to load manager list");
@@ -68,7 +69,7 @@ export default function ProfileSetup() {
     const checkDevice = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/webauthn/has-device", {
+        const res = await axios.get(`${API_BASE}/webauthn/has-device`, {
           headers: { Authorization: token },
         });
         setDeviceRegistered(res.data.hasDevice === true);
@@ -100,7 +101,7 @@ export default function ProfileSetup() {
   const handleCreate = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5001/api/employee/create", profilePayload, {
+      await axios.post(`${API_BASE}/employee/create`, profilePayload, {
         headers: { Authorization: token },
       });
       setIsExistingProfile(true);
@@ -113,7 +114,7 @@ export default function ProfileSetup() {
   const handleUpdate = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put("http://localhost:5001/api/employee/update", profilePayload, {
+      await axios.put(`${API_BASE}/employee/update`, profilePayload, {
         headers: { Authorization: token },
       });
       toast.success("Profile updated successfully");
@@ -146,7 +147,7 @@ export default function ProfileSetup() {
       const token = localStorage.getItem("token");
 
       const optionsRes = await axios.post(
-        "http://localhost:5001/api/webauthn/register-options",
+        `${API_BASE}/webauthn/register-options`,
         {},
         { headers: { Authorization: token } }
       );
@@ -176,7 +177,7 @@ export default function ProfileSetup() {
       };
 
       await axios.post(
-        "http://localhost:5001/api/webauthn/register-verify",
+        `${API_BASE}/webauthn/register-verify`,
         attestationResponse,
         { headers: { Authorization: token } }
       );

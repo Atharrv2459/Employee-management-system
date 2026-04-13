@@ -32,7 +32,7 @@ const [averageHours, setAverageHours] = useState("0.0");
 
   const fetchLeaveBalances = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/leaves/balance", {
+      const res = await axios.get(`${API_BASE}/leaves/balance`, {
         headers: { Authorization: token },
       });
       setLeaveBalances(res.data.data || []);
@@ -60,7 +60,7 @@ const formatDuration = (hoursDecimal) => {
 
   const fetchEmployeeDetails = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/employee/get", {
+      const res = await axios.get(`${API_BASE}/employee/get`, {
         headers: { Authorization: token },
       });
       const emp = res.data.data;
@@ -84,7 +84,7 @@ const formatDuration = (hoursDecimal) => {
   useEffect(() => {
   const fetchAttendanceStatus = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/attendance/get", {
+      const res = await axios.get(`${API_BASE}/attendance/get`, {
         headers: { Authorization: token },
       });
 
@@ -190,7 +190,7 @@ const formatDuration = (hoursDecimal) => {
 
   const handlePunchIn = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/api/attendance/punch-in", {}, {
+      const res = await axios.post(`${API_BASE}/attendance/punch-in`, {}, {
         headers: { Authorization: token },
       });
       const punchIn = new Date(res.data.data.punch_in);
@@ -209,7 +209,7 @@ const formatDuration = (hoursDecimal) => {
 
   const handlePunchOut = async () => {
     try {
-      const res = await axios.post("http://localhost:5001/api/attendance/punch-out", {}, {
+      const res = await axios.post(`${API_BASE}/attendance/punch-out`, {}, {
         headers: { Authorization: token },
       });
       const punchOut = new Date(res.data.data.punch_out);

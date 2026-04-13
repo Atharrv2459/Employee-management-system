@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_BASE } from "../../api";
 
 export default function ManagerTimesheet() {
   const [timesheetData, setTimesheetData] = useState([]);
@@ -19,7 +20,7 @@ export default function ManagerTimesheet() {
 
   const fetchTimesheetData = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/attendance/get', {
+      const res = await axios.get(`${API_BASE}/attendance/get`, {
         headers: { Authorization: token },
       });
 

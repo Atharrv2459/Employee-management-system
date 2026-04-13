@@ -1015,7 +1015,7 @@ ALTER TABLE ONLY public.managers
 --
 
 ALTER TABLE ONLY public.leave_balance
-    ADD CONSTRAINT leave_balance_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+    ADD CONSTRAINT leave_balance_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
 
 
 --

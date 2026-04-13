@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { FiClock, FiRefreshCw, FiCalendar, FiInfo } from "react-icons/fi";
-
-const API_BASE = "http://localhost:5001/api";
+import { API_BASE } from "../api";
 
 const toISODate = (d) => {
   // Use local date parts (NOT toISOString) to avoid UTC date shifting

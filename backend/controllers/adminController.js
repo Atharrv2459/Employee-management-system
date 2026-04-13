@@ -112,20 +112,36 @@ export const adminDeleteUser = async (req, res) => {
       return res.status(400).json({ message: "Admin cannot delete their own account" });
     }
 
-    // 3. Delete user
-    const result = await pool.query(
-      `DELETE FROM users WHERE user_id = $1 RETURNING *`,
-      [id]
-    );
+    const client = await pool.connect();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+    try {
+      await client.query("BEGIN");
+
+      // leave_balance FK (in some DB setups) is RESTRICT, so delete child rows first.
+      await client.query(`DELETE FROM leave_balance WHERE user_id = $1`, [id]);
+
+      // 3. Delete user
+      const result = await client.query(
+        `DELETE FROM users WHERE user_id = $1 RETURNING *`,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await client.query("COMMIT");
+      res.json({
+        message: "User deleted successfully",
+        deletedUser: result.rows[0],
+      });
+    } catch (errInner) {
+      await client.query("ROLLBACK");
+      throw errInner;
+    } finally {
+      client.release();
     }
-
-    res.json({
-      message: "User deleted successfully",
-      deletedUser: result.rows[0],
-    });
   } catch (err) {
     console.error("Error deleting user:", err.message);
     res.status(500).json({ error: err.message });

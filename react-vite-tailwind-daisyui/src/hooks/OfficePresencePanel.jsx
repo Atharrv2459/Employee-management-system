@@ -4,8 +4,8 @@ import toast from "react-hot-toast";
 import { FiAlertCircle, FiCheckCircle, FiMapPin, FiRefreshCw, FiXCircle } from "react-icons/fi";
 import { useGeolocation } from "../useGeolocation";
 import OfficeMap from "../wireframes/Employee_wireframes/OfficeMap";
+import { API_BASE } from "../api";
 
-const API_BASE = "http://localhost:5001/api";
 const STORAGE_KEY_DEFAULT = "preferredOfficeLocationId";
 
 export default function OfficePresencePanel({ showMap = false, storageKey = STORAGE_KEY_DEFAULT }) {

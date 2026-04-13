@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { FiDollarSign, FiDownload, FiCalendar, FiFileText, FiEye } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5001/api/payroll";
+import { PAYROLL_API_BASE as API_BASE } from "../../api";
 
 export default function MyPayslips() {
   const [payslips, setPayslips] = useState([]);

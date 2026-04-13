@@ -7,7 +7,7 @@ import {
   FiMapPin, FiDollarSign, FiTrendingUp, FiSearch
 } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5001/api/recruitment";
+import { API_BASE as CORE_API_BASE, RECRUITMENT_API_BASE as API_BASE } from "../../api";
 
 export default function JobPostings() {
   const [jobs, setJobs] = useState([]);
@@ -55,7 +55,7 @@ export default function JobPostings() {
           params: filter,
           headers: { Authorization: token }
         }),
-        axios.get("http://localhost:5001/api/departments"),
+        axios.get(`${CORE_API_BASE}/departments`),
         axios.get(`${API_BASE}/dashboard`, {
           headers: { Authorization: token }
         })

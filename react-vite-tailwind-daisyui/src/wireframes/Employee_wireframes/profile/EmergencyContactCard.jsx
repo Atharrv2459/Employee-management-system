@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE } from "../../../api";
 
 export default function EmergencyContactCard() {
   const [primaryName, setPrimaryName] = useState("");
@@ -15,7 +16,7 @@ export default function EmergencyContactCard() {
     const fetchEmergency = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/emergency/get", {
+        const res = await axios.get(`${API_BASE}/emergency/get`, {
           headers: { Authorization: token },
         });
 
@@ -54,12 +55,12 @@ export default function EmergencyContactCard() {
       };
 
       if (exists) {
-        await axios.patch("http://localhost:5001/api/emergency/update", payload, {
+        await axios.patch(`${API_BASE}/emergency/update`, payload, {
           headers: { Authorization: token },
         });
         toast.success("Emergency contact updated");
       } else {
-        await axios.post("http://localhost:5001/api/emergency/create", payload, {
+        await axios.post(`${API_BASE}/emergency/create`, payload, {
           headers: { Authorization: token },
         });
         toast.success("Emergency contact created");

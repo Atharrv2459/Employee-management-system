@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE } from "../api";
 
 export default function UserRegister() {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ export default function UserRegister() {
       1;
 
     try {
-      const res = await axios.post("http://localhost:5001/api/users/register", {
+      const res = await axios.post(`${API_BASE}/users/register`, {
         email,
         roll_no,
         password,

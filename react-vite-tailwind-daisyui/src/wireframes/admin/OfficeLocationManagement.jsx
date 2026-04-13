@@ -5,7 +5,7 @@ import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiCheck, FiX } from "react-icons/f
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-const API_BASE = "http://localhost:5001/api";
+import { API_BASE } from "../../api";
 
 // Fix for default marker icon in Leaflet
 import L from "leaflet";

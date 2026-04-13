@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { FiDollarSign, FiPlus, FiEdit2, FiUsers, FiTrendingUp, FiPercent } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5001/api/payroll";
+import { API_BASE as CORE_API_BASE, PAYROLL_API_BASE as API_BASE } from "../../api";
 
 export default function SalaryManagement() {
   const [activeTab, setActiveTab] = useState("employees");
@@ -53,7 +53,7 @@ export default function SalaryManagement() {
         axios.get(`${API_BASE}/components`),
         axios.get(`${API_BASE}/structures`),
         axios.get(`${API_BASE}/employee-salaries`, { headers: { Authorization: token } }),
-        axios.get("http://localhost:5001/api/employee/getAll")
+        axios.get(`${CORE_API_BASE}/employee/getAll`)
       ]);
       setComponents(compRes.data);
       setStructures(structRes.data);

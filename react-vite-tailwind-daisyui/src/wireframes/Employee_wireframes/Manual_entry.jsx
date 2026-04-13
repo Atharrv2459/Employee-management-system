@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "../../api";
 
 export default function Manual_entry() {
   const [entryType, setEntryType] = useState("");
@@ -22,7 +23,7 @@ export default function Manual_entry() {
   const fetchManualEntries = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5001/api/manual_entry/myEntries", {
+      const res = await axios.get(`${API_BASE}/manual_entry/myEntries`, {
         headers: { Authorization: token },
       });
       setEntries(res.data.data);
@@ -64,7 +65,7 @@ export default function Manual_entry() {
         explanation,
       };
 
-      await axios.post("http://localhost:5001/api/manual_entry/create", payload, {
+      await axios.post(`${API_BASE}/manual_entry/create`, payload, {
         headers: { Authorization: token },
       });
 
@@ -86,7 +87,7 @@ export default function Manual_entry() {
   const handleSubmit = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.patch(`http://localhost:5001/api/manual_entry/${id}/submit`, {}, {
+      await axios.patch(`${API_BASE}/manual_entry/${id}/submit`, {}, {
         headers: { Authorization: token },
       });
       toast.success("Submitted for approval");
@@ -100,7 +101,7 @@ export default function Manual_entry() {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5001/api/manual_entry/${id}/delete`, {
+      await axios.delete(`${API_BASE}/manual_entry/${id}/delete`, {
         headers: { Authorization: token },
       });
       toast.success("Entry deleted");
@@ -125,7 +126,7 @@ export default function Manual_entry() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5001/api/manual_entry/${editModalEntry.manual_id}/update`,
+        `${API_BASE}/manual_entry/${editModalEntry.manual_id}/update`,
         {
           entry_type: editModalEntry.entry_type,
           entry_time: editModalEntry.entry_time,

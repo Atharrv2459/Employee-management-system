@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "../../api";
 
 export default function LeaveHistory() {
   const [leaves, setLeaves] = useState([]);
@@ -36,7 +37,7 @@ const openEditModal = (leave) => {
 
   const fetchLeaves = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/leaves/get", {
+      const res = await axios.get(`${API_BASE}/leaves/get`, {
         headers: { Authorization: token },
       });
       setLeaves(res.data.data);
@@ -55,7 +56,7 @@ const openEditModal = (leave) => {
 
   const handleCancel = async (id) => {
     try {
-      await axios.delete(`http://localhost:5001/api/leaves/cancel/${id}`, {
+      await axios.delete(`${API_BASE}/leaves/cancel/${id}`, {
         headers: { Authorization: token },
       });
       toast.success("Leave cancelled");

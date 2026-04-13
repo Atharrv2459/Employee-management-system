@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "../../api";
 import { useNavigate } from "react-router-dom";
 import Manager_report from "./Manager_report";
 import {
@@ -25,7 +26,7 @@ export default function ManagerDashboard() {
   useEffect(() => {
     const fetchManagerDetails = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/manager/get", {
+        const res = await axios.get(`${API_BASE}/manager/get`, {
           headers: { Authorization: token },
         });
         const manager = res.data.data;
@@ -37,7 +38,7 @@ export default function ManagerDashboard() {
 
     const fetchTeamStatus = async () => {
   try {
-    const res = await axios.get("http://localhost:5001/api/attendance/manager-team-status", {
+    const res = await axios.get(`${API_BASE}/attendance/manager-team-status`, {
       headers: { Authorization: token },
     });
 
@@ -70,7 +71,7 @@ export default function ManagerDashboard() {
 
     const fetchPendingApprovals = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/manual_entry/pending", {
+        const res = await axios.get(`${API_BASE}/manual_entry/pending`, {
           headers: { Authorization: token },
         });
         setPendingApprovals(res.data.data);
@@ -81,7 +82,7 @@ export default function ManagerDashboard() {
 
     const fetchPendingLeaves = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/leave-management/get", {
+        const res = await axios.get(`${API_BASE}/leave-management/get`, {
           headers: { Authorization: token },
         });
         setPendingLeaves(res.data.data);
@@ -99,7 +100,7 @@ export default function ManagerDashboard() {
   const handleLeaveAction = async (leaveId, action) => {
     try {
       const res = await axios.patch(
-        `http://localhost:5001/api/leave-management/status/${leaveId}`,
+        `${API_BASE}/leave-management/status/${leaveId}`,
         { status: action },
         { headers: { Authorization: token } }
       );

@@ -7,7 +7,7 @@ import {
   FiStar, FiCheck, FiX, FiClock
 } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5001/api/recruitment";
+import { RECRUITMENT_API_BASE as API_BASE } from "../../api";
 
 const STATUS_COLORS = {
   new: 'badge-warning',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "./api";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -31,7 +32,7 @@ const handleDeleteUser = async (userId) => {
 
   try {
     await axios.delete(
-      `http://localhost:5001/api/admin/delete-user/${userId}`,
+      `${API_BASE}/admin/delete-user/${userId}`,
       {
         headers: { Authorization: token },
       }
@@ -50,7 +51,7 @@ const handleDeleteUser = async (userId) => {
   // =======================
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/admin/users", {
+      const res = await axios.get(`${API_BASE}/admin/users`, {
         headers: { Authorization: token },
       });
       setUsers(res.data.data || []);
@@ -85,7 +86,7 @@ const handleDeleteUser = async (userId) => {
   const handleSave = async () => {
     try {
       await axios.put(
-        `http://localhost:5001/api/admin/users/${selectedUser.user_id}`,
+        `${API_BASE}/admin/users/${selectedUser.user_id}`,
         selectedUser,
         { headers: { Authorization: token } }
       );
@@ -109,7 +110,7 @@ const handleDeleteUser = async (userId) => {
 
     try {
       await axios.post(
-        "http://localhost:5001/api/admin/users",
+        `${API_BASE}/admin/users`,
         newUser,
         {
           headers: {

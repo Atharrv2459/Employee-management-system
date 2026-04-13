@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { API_BASE } from "../api";
 
 export default function UserLogin() {
   const [identifier, setIdentifier] = useState("");
@@ -12,7 +13,7 @@ export default function UserLogin() {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:5001/api/users/login", {
+      const res = await axios.post(`${API_BASE}/users/login`, {
         identifier,
         password,
       });

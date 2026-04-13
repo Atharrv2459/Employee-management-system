@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { API_BASE } from "../../api";
 import { useNavigate } from "react-router-dom";
 
 // Import shared components
@@ -26,7 +27,7 @@ export default function ManagerProfileSetup() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5001/api/manager/get", {
+        const res = await axios.get(`${API_BASE}/manager/get`, {
           headers: { Authorization: token },
         });
 
@@ -54,7 +55,7 @@ export default function ManagerProfileSetup() {
 
     const fetchManagers = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/manager/getAll");
+        const res = await axios.get(`${API_BASE}/manager/getAll`);
         setManagers(res.data.data);
       } catch (error) {
         toast.error("Failed to load managers");
@@ -81,7 +82,7 @@ export default function ManagerProfileSetup() {
   const handleCreate = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5001/api/manager/create", profilePayload, {
+      await axios.post(`${API_BASE}/manager/create`, profilePayload, {
         headers: { Authorization: token },
       });
       setIsExistingProfile(true);
@@ -94,7 +95,7 @@ export default function ManagerProfileSetup() {
   const handleUpdate = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.patch("http://localhost:5001/api/manager/update", profilePayload, {
+      await axios.patch(`${API_BASE}/manager/update`, profilePayload, {
         headers: { Authorization: token },
       });
       toast.success("Manager profile updated");

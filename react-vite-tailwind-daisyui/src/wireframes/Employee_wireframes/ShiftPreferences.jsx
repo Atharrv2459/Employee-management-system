@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { FiSave, FiCalendar, FiClock, FiX, FiPlus } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5001/api";
+import { API_BASE } from "../../api";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday', short: 'Sun' },

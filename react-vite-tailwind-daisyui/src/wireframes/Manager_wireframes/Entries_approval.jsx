@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "../../api";
 
 export default function ManagerManualApproval() {
   const [entries, setEntries] = useState([]);
@@ -12,7 +13,7 @@ export default function ManagerManualApproval() {
 
   const fetchEntries = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/manual_entry/pending", {
+      const res = await axios.get(`${API_BASE}/manual_entry/pending`, {
         headers: { Authorization: token },
       });
       const all = res.data.data || [];
@@ -34,7 +35,7 @@ export default function ManagerManualApproval() {
 
   const handleApprove = async (id) => {
     try {
-      await axios.patch(`http://localhost:5001/api/manual_entry/${id}/approve`, {}, {
+      await axios.patch(`${API_BASE}/manual_entry/${id}/approve`, {}, {
         headers: { Authorization: token },
       });
       toast.success("Approved");
@@ -46,7 +47,7 @@ export default function ManagerManualApproval() {
 
   const handleReject = async () => {
     try {
-      await axios.patch(`http://localhost:5001/api/manual_entry/${selectedEntry.manual_id}/reject`,
+      await axios.patch(`${API_BASE}/manual_entry/${selectedEntry.manual_id}/reject`,
         { rejection_reason: rejectionReason },
         { headers: { Authorization: token } }
       );

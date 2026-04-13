@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE } from "../../api";
 
 export default function LeaveApplication() {
   const [leaveType, setLeaveType] = useState("");
@@ -18,7 +19,7 @@ export default function LeaveApplication() {
   useEffect(() => {
     const fetchManagers = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/manager/getAll");
+        const res = await axios.get(`${API_BASE}/manager/getAll`);
         setManagers(res.data.data || []);
       } catch (error) {
         console.error(error);
@@ -65,7 +66,7 @@ export default function LeaveApplication() {
         manager_id: managerId,
       };
 
-      const res = await axios.post("http://localhost:5001/api/leaves/apply", payload, {
+      const res = await axios.post(`${API_BASE}/leaves/apply`, payload, {
         headers: { Authorization: token },
       });
 

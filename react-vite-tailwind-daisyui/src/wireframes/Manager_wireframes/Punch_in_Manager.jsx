@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_BASE } from "../../api";
 import { useNavigate } from 'react-router-dom';
 
 export default function Punch_in() {
@@ -55,7 +56,7 @@ export default function Punch_in() {
 
   const fetchAttendance = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/attendance/get', {
+      const res = await axios.get(`${API_BASE}/attendance/get`, {
         headers: { Authorization: token },
       });
 
@@ -81,7 +82,7 @@ export default function Punch_in() {
 
   const handlePunchIn = async () => {
     try {
-      const res = await axios.post('http://localhost:5001/api/attendance/punch-in', {}, {
+      const res = await axios.post(`${API_BASE}/attendance/punch-in`, {}, {
         headers: { Authorization: token },
       });
       setPunch_in(new Date(res.data.data.punch_in));
@@ -94,7 +95,7 @@ export default function Punch_in() {
 
   const handlePunchOut = async () => {
     try {
-      const res = await axios.post('http://localhost:5001/api/attendance/punch-out', {}, {
+      const res = await axios.post(`${API_BASE}/attendance/punch-out`, {}, {
         headers: { Authorization: token },
       });
       setPunch_out(new Date(res.data.data.punch_out));
