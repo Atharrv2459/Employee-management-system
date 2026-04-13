@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString = process.env.DB_URL || process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || process.env.DB_URL;
 
 const shouldUseSsl =
   process.env.DB_SSL === "true" ||
@@ -13,7 +13,7 @@ const shouldUseSsl =
 const sslConfig = shouldUseSsl ? { rejectUnauthorized: false } : undefined;
 
 export const dbDiagnostics = (() => {
-  const connectionString = process.env.DATABASE_URL || process.env.DB_URL;
+  const source = process.env.DB_URL ? "DB_URL" : process.env.DATABASE_URL ? "DATABASE_URL" : null;
   const diag = {
     hasConnectionString: Boolean(connectionString && String(connectionString).trim()),
     source,
