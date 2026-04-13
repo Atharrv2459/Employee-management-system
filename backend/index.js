@@ -66,10 +66,20 @@ app.use('/api/recruitment', recruitmentRouter);
 
 
 
-app.get("/" , async(req,res)=>{
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+app.get("/", async (req, res) => {
+  try {
     const result = await pool.query("SELECT current_database()");
-    res.send(`The database name is : ${result.rows[0].current_database}`)
-})
+    res.json({ ok: true, database: result.rows?.[0]?.current_database });
+  } catch (error) {
+    console.error("DB check failed:", error);
+    // Keep service up even if DB isn't ready/configured yet
+    res.status(500).json({ ok: false, error: "Database connection failed" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
